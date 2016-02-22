@@ -1,0 +1,113 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0099cc"
+    tools:context="com.example.jaeseok.airshare.LoginActivity">
+
+    <!-- The primary full-screen view. This can be replaced with whatever view
+         is needed to present your content, e.g. VideoView, SurfaceView,
+         TextureView, etc. -->
+    <!--
+    <TextView
+        android:id="@+id/fullscreen_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:keepScreenOn="true"
+        android:text="@string/app_name"
+        android:textColor="#33b5e5"
+        android:textSize="50sp"
+        android:textStyle="bold" />
+    -->
+    <!-- This FrameLayout insets its children based on system windows using
+         android:fitsSystemWindows. -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:layout_gravity="center_horizontal|top"
+        android:background="#00B0F0">
+
+        <LinearLayout
+            android:id="@+id/fullscreen_content_controls"
+            style="?metaButtonBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:background="@color/black_overlay"
+            android:orientation="horizontal"
+            tools:ignore="UselessParent">
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="ID :"
+            android:id="@+id/textView2"
+            android:layout_gravity="left|center_vertical"
+            android:layout_marginLeft="70dp"
+            android:textSize="20dp"
+            android:layout_marginTop="-50dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="PW :"
+            android:id="@+id/textView3"
+            android:layout_gravity="left|center_vertical"
+            android:layout_marginLeft="56dp"
+            android:textSize="20dp"
+            android:layout_marginTop="10dp" />
+
+        <EditText
+            android:layout_width="197dp"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName"
+            android:ems="10"
+            android:id="@+id/TVid"
+            android:layout_gravity="center"
+            android:layout_marginLeft="30dp"
+            android:layout_marginTop="-50dp"
+            android:text="test" />
+
+        <EditText
+            android:layout_width="197dp"
+            android:layout_height="wrap_content"
+            android:inputType="textWebPassword"
+            android:ems="10"
+            android:id="@+id/TVpw"
+            android:layout_gravity="center"
+            android:layout_marginLeft="30dp"
+            android:layout_marginTop="10dp"
+            android:text="0000" />
+
+        <Button
+            android:layout_width="223dp"
+            android:layout_height="38dp"
+            android:text="Sign In"
+            android:id="@+id/signin_button"
+            android:layout_gravity="center_horizontal|bottom"
+            android:textSize="17dp"
+            android:textStyle="normal"
+            android:layout_marginBottom="130dp"
+            android:layout_marginLeft="0dp"
+            android:background="#1F4E79"
+            android:textColor="#ffffff"
+            android:typeface="normal" />
+
+        <ImageView
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:id="@+id/imageView"
+            android:layout_gravity="center_horizontal|top"
+            android:src="@drawable/logo_w2"
+            android:layout_marginTop="50dp" />
+
+
+    </FrameLayout>
+
+</FrameLayout>
