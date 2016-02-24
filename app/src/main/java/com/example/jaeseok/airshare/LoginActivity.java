@@ -30,7 +30,6 @@ public class LoginActivity extends AppCompatActivity {
     final int PORT = 5222;
     String USERNAME;
     String PASSWORD;
-    // t123432543
 
     private static final boolean AUTO_HIDE = true;
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;

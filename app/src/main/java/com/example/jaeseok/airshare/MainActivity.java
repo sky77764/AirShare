@@ -1,16 +1,12 @@
 package com.example.jaeseok.airshare;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -21,10 +17,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.app.ActionBar.LayoutParams;
-import android.widget.PopupWindow;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,9 +34,11 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.delay.packet.DelayInformation;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity
@@ -47,6 +46,9 @@ public class MainActivity extends AppCompatActivity
     public static XMPPTCPConnection mConnection = LoginActivity.getConnectedObject();
     public static ChatManager chatManager = ChatManager.getInstanceFor(mConnection);
     public static ArrayList<User> Users;
+    public static TextView textView;
+    public static ListView mListView = null;
+    public static ListViewAdapter mAdapter = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +82,21 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        mListView = (ListView) findViewById(R.id.messageList);
 
-        final TextView textView = (TextView) findViewById(R.id.textView4);
+        mAdapter = new ListViewAdapter(this);
+        mListView.setAdapter(mAdapter);
+
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                ListData mData = mAdapter.mListData.get(position);
+                Toast.makeText(MainActivity.this, mData.mTitle, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        textView = (TextView) findViewById(R.id.textView4);
 
         chatManager.addChatListener(new ChatManagerListener() {
             @Override
@@ -116,17 +131,34 @@ public class MainActivity extends AppCompatActivity
                         if(idx == -1) {
                             Users.add(new User(fromName));
                             idx = findUsername(fromName);
-                            Users.get(idx).addMessage(msg, timeStamp);
+                            Users.get(idx).addMessage(msg, timeStamp, true);
+
+                            mAdapter.addItem(getResources().getDrawable(R.drawable.ic_menu_send),
+                                    Users.get(idx).fromName,
+                                    Users.get(idx).getLastMessageBody(),
+                                    Users.get(idx).getLastMessageTime());
                         }
                         else {
-                            Users.get(idx).addMessage(msg, timeStamp);
+                            Users.get(idx).addMessage(msg, timeStamp, true);
+
+                            mAdapter.mListData.get(mAdapter.findUsername(fromName)).mBody = msg;
+                            mAdapter.mListData.get(mAdapter.findUsername(fromName)).mDate = timeStamp;
+
+                            mAdapter.dataChange();
                         }
 
+
+                        final int idx2 = idx;
                         textView.post(new Runnable() {
                             @Override
                             public void run() {
-                                String text = textView.getText().toString();
-                                textView.setText(text + "\n" + msg + " - " + fromName + "(" + timeStamp + ")");
+                                String info = "";
+                                for (int i=0; i<Users.size(); i++) {
+                                    info += Users.get(i).getLastMessageInfo();
+                                }
+                                textView.setText(info);
+
+//                                Users.get(idx2).postLastMessage(textView);
                             }
                         });
                     }
@@ -134,6 +166,105 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+    }
+
+    private class ViewHolder {
+        public ImageView mIcon;
+        public TextView mText;
+        public TextView mBody;
+        public TextView mDate;
+    }
+
+    private class ListViewAdapter extends BaseAdapter {
+        private Context mContext = null;
+        private ArrayList<ListData> mListData = new ArrayList<ListData>();
+
+        public ListViewAdapter(Context mContext) {
+            super();
+            this.mContext = mContext;
+        }
+
+        @Override
+        public int getCount() { return mListData.size(); }
+
+        @Override
+        public Object getItem(int position) { return mListData.get(position); }
+
+        @Override
+        public long getItemId(int position) { return position; }
+
+        public int findUsername(String fromName) {
+            for(int i=0; i<mListData.size(); i++) {
+                if(mListData.get(i).mTitle.equals(fromName))
+                    return i;
+            }
+            return -1;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                holder = new ViewHolder();
+
+                LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                convertView = inflater.inflate(R.layout.listview_item, null);
+
+                holder.mIcon = (ImageView) convertView.findViewById(R.id.mImage);
+                holder.mText = (TextView) convertView.findViewById(R.id.mText);
+                holder.mBody = (TextView) convertView.findViewById(R.id.mBody);
+                holder.mDate = (TextView) convertView.findViewById(R.id.mDate);
+
+                convertView.setTag(holder);
+            }else{
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            ListData mData = mListData.get(position);
+
+            if (mData.mIcon != null) {
+                holder.mIcon.setVisibility(View.VISIBLE);
+                holder.mIcon.setImageDrawable(mData.mIcon);
+            }else{
+                holder.mIcon.setVisibility(View.GONE);
+            }
+
+            holder.mText.setText(mData.mTitle);
+            holder.mBody.setText(mData.mBody);
+            holder.mDate.setText(mData.mDate);
+
+            return convertView;
+        }
+
+        public void addItem(Drawable icon, String mTitle, String mBody, String mDate){
+            ListData addInfo = null;
+            addInfo = new ListData();
+            addInfo.mIcon = icon;
+            addInfo.mTitle = mTitle;
+            addInfo.mBody = mBody;
+            addInfo.mDate = mDate;
+
+            mListData.add(addInfo);
+        }
+
+        public void remove(int position){
+            mListData.remove(position);
+            dataChange();
+        }
+
+        public void sort(){
+            Collections.sort(mListData, ListData.ALPHA_COMPARATOR);
+            dataChange();
+        }
+
+        public void dataChange(){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mAdapter.notifyDataSetChanged();
+                }
+            });
+        }
     }
 
     @Override
@@ -189,6 +320,9 @@ public class MainActivity extends AppCompatActivity
 
 
     public static ChatManager getChatManagerObject() { return chatManager; }
+    public static ArrayList<User> getUserObject() { return Users; }
+    public static TextView getTextView() { return textView; }
+    public static ListViewAdapter getListViewAdapter() { return mAdapter; }
 
     public int findUsername(String fromName) {
         for(int i=0; i<this.Users.size(); i++) {
@@ -197,5 +331,6 @@ public class MainActivity extends AppCompatActivity
         }
         return -1;
     }
+
 
 }
