@@ -26,7 +26,7 @@ import java.io.IOException;
 
 public class LoginActivity extends AppCompatActivity {
     public static XMPPTCPConnection mConnection;
-    final String DOMAIN = "192.168.0.102";
+    String DOMAIN;
     final int PORT = 5222;
     String USERNAME;
     String PASSWORD;
@@ -102,9 +102,11 @@ public class LoginActivity extends AppCompatActivity {
             public void onClick(View v) {
                 EditText id = (EditText) findViewById(R.id.TVid);
                 EditText pw = (EditText) findViewById(R.id.TVpw);
+                EditText ipaddr = (EditText) findViewById(R.id.TVipaddr);
 
                 USERNAME = id.getText().toString();
                 PASSWORD = pw.getText().toString();
+                DOMAIN = ipaddr.getText().toString();
 
                 if (USERNAME.length() == 0) {
                     Toast toastId = Toast.makeText(getApplicationContext(), "Please input ID", Toast.LENGTH_SHORT);

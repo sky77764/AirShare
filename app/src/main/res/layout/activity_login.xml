@@ -107,6 +107,14 @@
             android:src="@drawable/logo_w2"
             android:layout_marginTop="50dp" />
 
+        <EditText
+            android:layout_width="138dp"
+            android:layout_height="wrap_content"
+            android:text="192.168.43.105"
+            android:id="@+id/TVipaddr"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="20dp" />
+
 
     </FrameLayout>
 

@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,8 +24,9 @@ import java.util.Calendar;
 public class SendActivity extends Activity {
     final ChatManager chatManager = MainActivity.getChatManagerObject();
     public static ArrayList<User> Users = MainActivity.getUserObject();
-    public static TextView textView = MainActivity.getTextView();
-
+//    public static TextView textView = MainActivity.getTextView();
+    public static ListView mListView = MainActivity.mListView;
+    public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
 
     Button Btn_Send;
     EditText Text_To;
@@ -60,27 +62,36 @@ public class SendActivity extends Activity {
                 try {
                     chat.sendMessage(BODY);
 
-                    Calendar c = Calendar.getInstance();
-                    int minute = c.get(Calendar.MINUTE);
-                    int hour = c.get(Calendar.HOUR);
+                    Calendar time = Calendar.getInstance();
 
-                    String timeStamp = new String(String.valueOf(hour) + ":" + String.valueOf(minute));
+                    String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                            + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
 
                     int idx = findUsername(USERNAME_TO);
                     if(idx == -1) {
                         Users.add(new User(USERNAME_TO));
                         idx = findUsername(USERNAME_TO);
-                        Users.get(idx).addMessage(BODY, timeStamp, false);
+                        Users.get(idx).addMessage(BODY, time, false);
+
+                        mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                Users.get(idx).fromName,
+                                Users.get(idx).getLastMessageBody(),
+                                cur_time);
                     }
                     else {
-                        Users.get(idx).addMessage(BODY, timeStamp, false);
+                        Users.get(idx).addMessage(BODY, time, false);
+
+                        mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
+                        mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
                     }
 
-                    String info = "";
-                    for (int i=0; i<Users.size(); i++) {
-                        info += Users.get(i).getLastMessageInfo();
-                    }
-                    textView.setText(info);
+                    mAdapter.dataChange();
+
+//                    String info = "";
+//                    for (int i=0; i<Users.size(); i++) {
+//                        info += Users.get(i).getLastMessageInfo();
+//                    }
+//                    textView.setText(info);
 
 //                    Users.get(idx).postLastMessage(textView);
                     finish();

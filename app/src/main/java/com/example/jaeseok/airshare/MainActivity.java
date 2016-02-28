@@ -46,9 +46,11 @@ public class MainActivity extends AppCompatActivity
     public static XMPPTCPConnection mConnection = LoginActivity.getConnectedObject();
     public static ChatManager chatManager = ChatManager.getInstanceFor(mConnection);
     public static ArrayList<User> Users;
-    public static TextView textView;
+//    public static TextView textView;
     public static ListView mListView = null;
     public static ListViewAdapter mAdapter = null;
+    public static String MONTHS[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
+        "Sep", "Oct", "Nov", "Dec"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,7 +98,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        textView = (TextView) findViewById(R.id.textView4);
+//        textView = (TextView) findViewById(R.id.textView4);
 
         chatManager.addChatListener(new ChatManagerListener() {
             @Override
@@ -117,11 +119,11 @@ public class MainActivity extends AppCompatActivity
                         }
 
                         // get offline message timestamp
-                        Calendar c = Calendar.getInstance();
-                        int minute = c.get(Calendar.MINUTE);
-                        int hour = c.get(Calendar.HOUR);
+                        Calendar time = Calendar.getInstance();
 
-                        final String timeStamp = new String(String.valueOf(hour) + ":" + String.valueOf(minute));
+                        String cur_time = new String(MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                            + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
+
 //                        if(inf!=null) {
 //                            Date date = inf.getStamp();
 //                            timeStamp = date.toString();
@@ -131,36 +133,21 @@ public class MainActivity extends AppCompatActivity
                         if(idx == -1) {
                             Users.add(new User(fromName));
                             idx = findUsername(fromName);
-                            Users.get(idx).addMessage(msg, timeStamp, true);
+                            Users.get(idx).addMessage(msg, time, true);
 
-                            mAdapter.addItem(getResources().getDrawable(R.drawable.ic_menu_send),
+                            mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
                                     Users.get(idx).fromName,
                                     Users.get(idx).getLastMessageBody(),
-                                    Users.get(idx).getLastMessageTime());
+                                    cur_time);
                         }
                         else {
-                            Users.get(idx).addMessage(msg, timeStamp, true);
+                            Users.get(idx).addMessage(msg, time, true);
 
                             mAdapter.mListData.get(mAdapter.findUsername(fromName)).mBody = msg;
-                            mAdapter.mListData.get(mAdapter.findUsername(fromName)).mDate = timeStamp;
-
-                            mAdapter.dataChange();
+                            mAdapter.mListData.get(mAdapter.findUsername(fromName)).mDate = cur_time;
                         }
+                        mAdapter.dataChange();
 
-
-                        final int idx2 = idx;
-                        textView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                String info = "";
-                                for (int i=0; i<Users.size(); i++) {
-                                    info += Users.get(i).getLastMessageInfo();
-                                }
-                                textView.setText(info);
-
-//                                Users.get(idx2).postLastMessage(textView);
-                            }
-                        });
                     }
                 });
             }
@@ -168,16 +155,16 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    private class ViewHolder {
+    public class ViewHolder {
         public ImageView mIcon;
         public TextView mText;
         public TextView mBody;
         public TextView mDate;
     }
 
-    private class ListViewAdapter extends BaseAdapter {
-        private Context mContext = null;
-        private ArrayList<ListData> mListData = new ArrayList<ListData>();
+    public class ListViewAdapter extends BaseAdapter {
+        public Context mContext = null;
+        public ArrayList<ListData> mListData = new ArrayList<ListData>();
 
         public ListViewAdapter(Context mContext) {
             super();
@@ -321,7 +308,7 @@ public class MainActivity extends AppCompatActivity
 
     public static ChatManager getChatManagerObject() { return chatManager; }
     public static ArrayList<User> getUserObject() { return Users; }
-    public static TextView getTextView() { return textView; }
+//    public static TextView getTextView() { return textView; }
     public static ListViewAdapter getListViewAdapter() { return mAdapter; }
 
     public int findUsername(String fromName) {

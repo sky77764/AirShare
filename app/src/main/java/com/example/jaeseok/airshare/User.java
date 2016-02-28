@@ -3,6 +3,7 @@ package com.example.jaeseok.airshare;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 /**
  * Created by JaeSeok on 2016-02-22.
@@ -10,12 +11,12 @@ import java.util.ArrayList;
 
 class MyMessage {
     String body;
-    String timeStamp;
+    Calendar time;
     boolean bReceived;
 
-    MyMessage(String body, String timeStamp, boolean bReceived) {
+    MyMessage(String body, Calendar time, boolean bReceived) {
         this.body = body;
-        this.timeStamp = timeStamp;
+        this.time = time;
         this.bReceived = bReceived;
     }
 }
@@ -33,12 +34,12 @@ public class User {
         this.fromName = fromName;
     }
 
-    public void addMessage(String body,  String timeStamp, boolean bReceived) {
-        messages.add(new MyMessage(body, timeStamp, bReceived));
+    public void addMessage(String body,  Calendar time, boolean bReceived) {
+        messages.add(new MyMessage(body, time, bReceived));
     }
 
     public String getLastMessageBody() { return messages.get(messages.size()-1).body; }
-    public String getLastMessageTime() { return messages.get(messages.size()-1).timeStamp; }
+    public Calendar getLastMessageTime() { return messages.get(messages.size()-1).time; }
     public Boolean getLastMessageBool() { return messages.get(messages.size()-1).bReceived; }
     public String getLastMessageInfo() { return fromName + "\n" + getLastMessageBody() + "\n" + getLastMessageTime() + "\n"; }
 
