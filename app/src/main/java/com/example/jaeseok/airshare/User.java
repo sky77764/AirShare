@@ -19,6 +19,12 @@ class MyMessage {
         this.time = time;
         this.bReceived = bReceived;
     }
+
+    String getTimeString() {
+        String timeString = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
+        return timeString;
+    }
 }
 
 public class User {

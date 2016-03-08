@@ -31,7 +31,11 @@
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".SendActivity"
-            android:theme="@style/MyFloatingWindow"/>
+            android:theme="@style/MyFloatingWindow" />
+        <activity
+            android:name=".ChatActivity" />
+
+
     </application>
 
 </manifest>

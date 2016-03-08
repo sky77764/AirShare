@@ -94,7 +94,14 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
                 ListData mData = mAdapter.mListData.get(position);
-                Toast.makeText(MainActivity.this, mData.mTitle, Toast.LENGTH_SHORT).show();
+//                Toast.makeText(MainActivity.this, mData.mTitle, Toast.LENGTH_SHORT).show();
+
+                Intent intentChatActivity = new Intent(MainActivity.this, ChatActivity.class);
+//                intentChatActivity.putExtra("Users", Users);
+//                intentChatActivity.putExtra("fromName", mData.mTitle);
+                intentChatActivity.putExtra("Users_idx", findUsername(mData.mTitle));
+                startActivity(intentChatActivity);
+
             }
         });
 
@@ -186,21 +193,21 @@ public class MainActivity extends AppCompatActivity
                     return i;
             }
             return -1;
-        }
+            }
 
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            ViewHolder holder;
-            if (convertView == null) {
-                holder = new ViewHolder();
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                ViewHolder holder;
+                if (convertView == null) {
+                    holder = new ViewHolder();
 
-                LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                convertView = inflater.inflate(R.layout.listview_item, null);
+                    LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    convertView = inflater.inflate(R.layout.listview_item, null);
 
-                holder.mIcon = (ImageView) convertView.findViewById(R.id.mImage);
-                holder.mText = (TextView) convertView.findViewById(R.id.mText);
-                holder.mBody = (TextView) convertView.findViewById(R.id.mBody);
-                holder.mDate = (TextView) convertView.findViewById(R.id.mDate);
+                    holder.mIcon = (ImageView) convertView.findViewById(R.id.mImage);
+                    holder.mText = (TextView) convertView.findViewById(R.id.mText);
+                    holder.mBody = (TextView) convertView.findViewById(R.id.mBody);
+                    holder.mDate = (TextView) convertView.findViewById(R.id.mDate);
 
                 convertView.setTag(holder);
             }else{
