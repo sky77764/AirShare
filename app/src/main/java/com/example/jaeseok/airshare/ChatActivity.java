@@ -39,11 +39,13 @@ public class ChatActivity extends ActionBarActivity {
     private int Users_idx;
     private String USERNAME_TO;
     public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
+    public static boolean isChatActivityInFront = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+        isChatActivityInFront = true;
 
         Intent intent = getIntent();
         Users_idx = intent.getExtras().getInt("Users_idx");
@@ -52,17 +54,6 @@ public class ChatActivity extends ActionBarActivity {
 
         Toast.makeText(ChatActivity.this, Users.get(Users_idx).fromName, Toast.LENGTH_SHORT).show();
 
-        chatManager.addChatListener(new ChatManagerListener() {
-            @Override
-            public void chatCreated(Chat chat, boolean b) {
-                chat.addMessageListener(new ChatMessageListener() {
-                    @Override
-                    public void processMessage(Chat chat, Message message) {
-                        Toast.makeText(ChatActivity.this, "New Message Received", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        });
     }
 
     @Override
@@ -97,7 +88,7 @@ public class ChatActivity extends ActionBarActivity {
         RelativeLayout container = (RelativeLayout) findViewById(R.id.container);
         companionLabel.setText(USERNAME_TO);
 
-        loadDummyHistory();
+        loadHistory();
 
         sendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -106,9 +97,6 @@ public class ChatActivity extends ActionBarActivity {
                 if (TextUtils.isEmpty(messageText)) {
                     return;
                 }
-
-
-//                chatMessage.setDate(DateFormat.getDateTimeInstance().format(new Date()));
 
 
                 Chat chat = chatManager.createChat(USERNAME_TO + "@jaeseok");
@@ -155,7 +143,7 @@ public class ChatActivity extends ActionBarActivity {
         messagesContainer.setSelection(messagesContainer.getCount() - 1);
     }
 
-    private void loadDummyHistory(){
+    public void loadHistory(){
 
         chatHistory = new ArrayList<ChatMessage>();
 
@@ -174,19 +162,6 @@ public class ChatActivity extends ActionBarActivity {
         }
 
 
-//        ChatMessage msg = new ChatMessage();
-//        msg.setId(1);
-//        msg.setMe(true);
-//        msg.setMessage("Hi");
-//        msg.setDate(DateFormat.getDateTimeInstance().format(new Date()));
-//        chatHistory.add(msg);
-//        ChatMessage msg1 = new ChatMessage();
-//        msg1.setId(2);
-//        msg1.setMe(false);
-//        msg1.setMessage("How r u doing???");
-//        msg1.setDate(DateFormat.getDateTimeInstance().format(new Date()));
-//        chatHistory.add(msg1);
-
         adapter = new ChatAdapter(ChatActivity.this, new ArrayList<ChatMessage>());
         messagesContainer.setAdapter(adapter);
 
@@ -195,6 +170,18 @@ public class ChatActivity extends ActionBarActivity {
             displayMessage(message);
         }
 
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isChatActivityInFront = true;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isChatActivityInFront = false;
     }
 
     public int findUsername(String fromName) {

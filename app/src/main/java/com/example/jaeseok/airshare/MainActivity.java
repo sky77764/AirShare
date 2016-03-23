@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity
     public static String MONTHS[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
         "Sep", "Oct", "Nov", "Dec"};
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -155,6 +156,14 @@ public class MainActivity extends AppCompatActivity
                         }
                         mAdapter.dataChange();
 
+
+                        if(ChatActivity.isChatActivityInFront) {
+                            Log.d("INFRONT", "TRUE");
+
+                        }
+                        else {
+                            Log.d("INFRONT", "FALSE");
+                        }
                     }
                 });
             }
