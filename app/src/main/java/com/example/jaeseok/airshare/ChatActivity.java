@@ -31,13 +31,13 @@ import java.util.Date;
 public class ChatActivity extends ActionBarActivity {
     final ChatManager chatManager = MainActivity.getChatManagerObject();
     private EditText messageET;
-    private ListView messagesContainer;
+    public static ListView messagesContainer;
     private Button sendBtn;
-    private ChatAdapter adapter;
+    public static ChatAdapter adapter;
     private ArrayList<ChatMessage> chatHistory;
     public static ArrayList<User> Users = MainActivity.getUserObject();
     private int Users_idx;
-    private String USERNAME_TO;
+    public static String USERNAME_TO;
     public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
     public static boolean isChatActivityInFront = false;
 
@@ -133,13 +133,13 @@ public class ChatActivity extends ActionBarActivity {
 
     }
 
-    public void displayMessage(ChatMessage message) {
+    public static void displayMessage(ChatMessage message) {
         adapter.add(message);
         adapter.notifyDataSetChanged();
         scroll();
     }
 
-    private void scroll() {
+    public static void scroll() {
         messagesContainer.setSelection(messagesContainer.getCount() - 1);
     }
 

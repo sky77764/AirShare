@@ -157,9 +157,17 @@ public class MainActivity extends AppCompatActivity
                         mAdapter.dataChange();
 
 
-                        if(ChatActivity.isChatActivityInFront) {
+                        if(ChatActivity.isChatActivityInFront && ChatActivity.USERNAME_TO.equals(fromName)) {
                             Log.d("INFRONT", "TRUE");
+                            Log.d("INFRONT", ChatActivity.USERNAME_TO);
+                            Log.d("INFRONT", fromName);
+                            ChatMessage chatMessage = new ChatMessage();
+                            chatMessage.setId(122);//dummy
+                            chatMessage.setMessage(msg);
+                            chatMessage.setDate(cur_time);
+                            chatMessage.setMe(false);
 
+                            ChatActivity.displayMessage(chatMessage);
                         }
                         else {
                             Log.d("INFRONT", "FALSE");

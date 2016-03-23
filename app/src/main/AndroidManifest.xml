@@ -33,7 +33,8 @@
             android:name=".SendActivity"
             android:theme="@style/MyFloatingWindow" />
         <activity
-            android:name=".ChatActivity" />
+            android:name=".ChatActivity"
+            android:theme="@style/FullscreenTheme"/>
 
 
     </application>
