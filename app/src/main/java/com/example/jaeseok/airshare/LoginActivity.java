@@ -28,7 +28,7 @@ public class LoginActivity extends AppCompatActivity {
     public static XMPPTCPConnection mConnection;
     String DOMAIN;
     final int PORT = 5222;
-    String USERNAME;
+    public static String USERNAME;
     String PASSWORD;
 
     private static final boolean AUTO_HIDE = true;

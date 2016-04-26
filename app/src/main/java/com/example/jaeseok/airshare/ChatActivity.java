@@ -52,6 +52,8 @@ public class ChatActivity extends ActionBarActivity {
         USERNAME_TO = new String(Users.get(Users_idx).fromName);
         initControls();
 
+        getSupportActionBar().setTitle(USERNAME_TO);
+
         Toast.makeText(ChatActivity.this, Users.get(Users_idx).fromName, Toast.LENGTH_SHORT).show();
 
     }
@@ -83,10 +85,10 @@ public class ChatActivity extends ActionBarActivity {
         messageET = (EditText) findViewById(R.id.messageEdit);
         sendBtn = (Button) findViewById(R.id.chatSendButton);
 
-        TextView meLabel = (TextView) findViewById(R.id.meLbl);
-        TextView companionLabel = (TextView) findViewById(R.id.friendLabel);
+        //TextView meLabel = (TextView) findViewById(R.id.meLbl);
+        //TextView companionLabel = (TextView) findViewById(R.id.friendLabel);
         RelativeLayout container = (RelativeLayout) findViewById(R.id.container);
-        companionLabel.setText(USERNAME_TO);
+       // companionLabel.setText(USERNAME_TO);
 
         loadHistory();
 
