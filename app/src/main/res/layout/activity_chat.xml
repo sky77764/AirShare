@@ -45,20 +45,20 @@
             android:divider="@null" />
 
         <TextView
-            android:id="@+id/meLbl"
+            android:id="@+id/friendLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="left|center_vertical"
-            android:text="MySelf"
+            android:text="Friend"
             android:singleLine="false"
             android:textSize="20dp" />
 
         <TextView
-            android:id="@+id/friendLabel"
+            android:id="@+id/meLbl"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
-            android:text="Friend"
+            android:text="Myself"
             android:textSize="20dp" />
 
 
