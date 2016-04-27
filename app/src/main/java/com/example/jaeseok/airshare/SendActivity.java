@@ -1,6 +1,7 @@
 package com.example.jaeseok.airshare;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -44,13 +45,14 @@ public class SendActivity extends Activity {
         getWindow().setLayout(screenWidth, screenHeight);
 
         Btn_Send = (Button) findViewById(R.id.btn_send);
-        Text_To = (EditText) findViewById(R.id.text_to);
+        //Text_To = (EditText) findViewById(R.id.text_to);
         Text_Body = (EditText) findViewById(R.id.text_body);
 
         Btn_Send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String USERNAME_TO = Text_To.getText().toString();
+//                String USERNAME_TO = Text_To.getText().toString();
+                String USERNAME_TO = "test2";
                 String BODY = Text_Body.getText().toString();
 
                 if (BODY.length() == 0) {
@@ -58,6 +60,10 @@ public class SendActivity extends Activity {
                     return;
                 }
 
+                Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
+                startActivity(intentMapsActivity);
+
+                /*
                 Chat chat = chatManager.createChat(USERNAME_TO + "@jaeseok");
                 try {
                     chat.sendMessage(BODY);
@@ -87,19 +93,13 @@ public class SendActivity extends Activity {
 
                     mAdapter.dataChange();
 
-//                    String info = "";
-//                    for (int i=0; i<Users.size(); i++) {
-//                        info += Users.get(i).getLastMessageInfo();
-//                    }
-//                    textView.setText(info);
-
-//                    Users.get(idx).postLastMessage(textView);
                     finish();
 
                 } catch (SmackException.NotConnectedException e) {
                     Log.d("SendMsg", e.toString());
                     Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
                 }
+                */
             }
         });
 

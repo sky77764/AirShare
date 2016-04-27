@@ -1,15 +1,19 @@
 package com.example.jaeseok.airshare;
 
+import android.app.ActionBar;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBarActivity;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -53,6 +57,7 @@ public class ChatActivity extends ActionBarActivity {
         initControls();
 
         getSupportActionBar().setTitle(USERNAME_TO);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         Toast.makeText(ChatActivity.this, Users.get(Users_idx).fromName, Toast.LENGTH_SHORT).show();
 
@@ -64,7 +69,7 @@ public class ChatActivity extends ActionBarActivity {
         getMenuInflater().inflate(R.menu.menu_chat, menu);
         return true;
     }
-
+/*
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -77,6 +82,20 @@ public class ChatActivity extends ActionBarActivity {
             return true;
         }
 
+        return super.onOptionsItemSelected(item);
+    }
+*/
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // Respond to the action bar's Up/Home button
+            case android.R.id.home:
+                //NavUtils.navigateUpFromSameTask(this);
+                this.finish();
+                return true;
+            case R.id.action_settings:
+                return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 

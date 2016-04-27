@@ -22,13 +22,13 @@
 
         <Button
             android:id="@+id/chatSendButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
             android:layout_alignParentRight="true"
-            android:background="@color/background_floating_material_dark"
-            android:text="Send MSG"
-            android:textColor="@color/background_material_light"/>
+            android:background="@color/colorAccent"
+            android:text="Send"
+            android:textColor="@color/background_material_light"
+            android:layout_alignParentBottom="true" />
 
         <ListView
             android:id="@+id/messagesContainer"
