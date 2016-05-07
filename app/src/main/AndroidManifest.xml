@@ -58,8 +58,13 @@
 
         <activity
             android:name=".MapsActivity"
-            android:theme="@style/MyFloatingWindow"
-            android:label="@string/title_activity_maps"></activity>
+            android:label="@string/title_activity_maps"
+            android:theme="@style/MyFloatingWindow" />
+
+        <service
+            android:name=".LocationService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>

@@ -1,6 +1,7 @@
 package com.example.jaeseok.airshare;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
@@ -81,6 +82,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Location location = locationManager.getLastKnownLocation(provider);
 
         if(location!=null) {
+
+
             double latitude = location.getLatitude();
             double longitude = location.getLongitude();
             myPosition = new LatLng(latitude, longitude);
