@@ -3,14 +3,19 @@ package com.example.jaeseok.airshare;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.LevelListDrawable;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,11 +23,25 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
+    String USERNAME = LoginActivity.getUSERNAME();
+    String DOMAIN;
+    String phpFILENAME;
+    String url;
     private GoogleMap mMap;
     LatLng myPosition;
     final int REQUEST_CODE_LOCATION = 2;
@@ -42,6 +61,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
+        DOMAIN = LoginActivity.getDOMAIN();
+        phpFILENAME = "selectAll.php";
+        url = "http://"+DOMAIN+"/"+phpFILENAME;
+        //Toast.makeText(MapsActivity.this, url, Toast.LENGTH_SHORT).show();
+        getData(url);
     }
 
 
@@ -93,6 +119,70 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
     }
+
+    public void getData(String url){
+        class GetDataJSON extends AsyncTask<String, Void, String> {
+
+            @Override
+            protected String doInBackground(String... params) {
+
+                String uri = params[0];
+
+                BufferedReader bufferedReader = null;
+                try {
+                    URL url = new URL(uri);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    StringBuilder sb = new StringBuilder();
+
+                    bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+
+                    String json;
+                    while((json = bufferedReader.readLine())!= null){
+                        sb.append(json+"\n");
+                    }
+
+                    return sb.toString().trim();
+
+                }catch(Exception e){
+                    Log.d("getData", e.toString());
+                    return null;
+                }
+
+            }
+
+            @Override
+            protected void onPostExecute(String result){
+               // Toast.makeText(MapsActivity.this, result, Toast.LENGTH_SHORT).show();
+                try {
+                    JSONObject object = new JSONObject(result);
+                    JSONArray jarray = new JSONArray(object.getString("result"));   // JSONArray 생성
+
+                    for(int i=0; i < jarray.length(); i++){
+                        JSONObject jObject = jarray.getJSONObject(i);  // JSONObject 추출
+                        String username = jObject.getString("username");
+                        double latitude = jObject.getDouble("latitude");
+                        double longitude = jObject.getDouble("longitude");
+
+                        if (username != USERNAME) {
+                            mMap.addMarker(new MarkerOptions()
+                                    .position(new LatLng(latitude, longitude))
+                                    .title(username));
+                        }
+
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+//                Toast.makeText(MapsActivity.this, test, Toast.LENGTH_SHORT).show();
+                //showList();
+
+            }
+        }
+        GetDataJSON g = new GetDataJSON();
+        g.execute(url);
+    }
+
+
 
 
 }

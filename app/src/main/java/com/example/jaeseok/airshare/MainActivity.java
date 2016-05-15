@@ -99,16 +99,13 @@ public class MainActivity extends AppCompatActivity
 //                Toast.makeText(MainActivity.this, mData.mTitle, Toast.LENGTH_SHORT).show();
 
                 Intent intentChatActivity = new Intent(MainActivity.this, ChatActivity.class);
-//                intentChatActivity.putExtra("Users", Users);
-//                intentChatActivity.putExtra("fromName", mData.mTitle);
                 intentChatActivity.putExtra("Users_idx", findUsername(mData.mTitle));
                 startActivity(intentChatActivity);
 
             }
         });
 
-        Intent intent = new Intent(this, LocationService.class);
-        startService(intent);
+
 
         chatManager.addChatListener(new ChatManagerListener() {
             @Override

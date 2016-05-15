@@ -26,9 +26,11 @@ import java.io.IOException;
 
 public class LoginActivity extends AppCompatActivity {
     public static XMPPTCPConnection mConnection;
-    String DOMAIN;
+    public static String DOMAIN;
+    String DOMAIN2;
     final int PORT = 5222;
     public static String USERNAME;
+    String USERNAME2;
     String PASSWORD;
 
     private static final boolean AUTO_HIDE = true;
@@ -107,6 +109,9 @@ public class LoginActivity extends AppCompatActivity {
                 USERNAME = id.getText().toString();
                 PASSWORD = pw.getText().toString();
                 DOMAIN = ipaddr.getText().toString();
+                USERNAME2 = USERNAME;
+                DOMAIN2 = DOMAIN;
+
 
                 if (USERNAME.length() == 0) {
                     Toast toastId = Toast.makeText(getApplicationContext(), "Please input ID", Toast.LENGTH_SHORT);
@@ -217,8 +222,15 @@ public class LoginActivity extends AppCompatActivity {
                 Log.i("User Logged In", USERNAME);
                 mConnection = mConnection_temp;
 
+
+                Intent intent = new Intent(LoginActivity.this, LocationService.class);
+                intent.putExtra("DOMAIN", DOMAIN2);
+                intent.putExtra("USERNAME", USERNAME2);
+                startService(intent);
+
                 Intent intentMainActivity = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intentMainActivity);
+
             }
             else {
                 Toast errMsg = Toast.makeText(getApplicationContext(), "Sign in Failed!", Toast.LENGTH_SHORT);
@@ -230,6 +242,9 @@ public class LoginActivity extends AppCompatActivity {
     public static XMPPTCPConnection getConnectedObject() {
         return mConnection;
     }
+
+    public static String getDOMAIN() {return DOMAIN;}
+    public static String getUSERNAME() {return USERNAME;}
 
 }
 

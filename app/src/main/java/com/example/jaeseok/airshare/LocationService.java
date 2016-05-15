@@ -23,12 +23,22 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class LocationService extends Service {
 
-//    private Location mDestination;
+    //    private Location mDestination;
+    static String DOMAIN = LoginActivity.getDOMAIN();
+    static String USERNAME = LoginActivity.getUSERNAME();
+    String phpFILENAME = "insert.php";
+    String url;
+    Intent intent;
 
     private LocationListener locationListener = new LocationListener() {
         @Override
@@ -37,6 +47,14 @@ public class LocationService extends Service {
 //            float distance = mDestination.distanceTo(location);
             String message = "lat: " + String.valueOf(location.getLatitude()) + ", long: " + String.valueOf(location.getLongitude());
             Log.d("onLocationChanged", message);
+
+            //intent = new Intent();
+           // DOMAIN=(String) intent.getExtras().get("DOMAIN");
+           // USERNAME = (String) intent.getExtras().get("USERNAME");
+            url = "http://"+DOMAIN+"/"+phpFILENAME+"?username="+USERNAME+"&latitude="+String.valueOf(location.getLatitude())+"&longitude="+String.valueOf(location.getLongitude());
+            //Toast.makeText(MapsActivity.this, url, Toast.LENGTH_SHORT).show();
+            insertData(url);
+            Log.d("onLocationChanged2", url);
 
 
 
@@ -85,6 +103,47 @@ public class LocationService extends Service {
                 locationListener);
 
         return START_STICKY;
+    }
+
+    public void insertData(String url){
+        class insertDATA extends AsyncTask<String, Void, String> {
+
+            @Override
+            protected String doInBackground(String... params) {
+
+                String uri = params[0];
+
+                BufferedReader bufferedReader = null;
+                try {
+                    URL url = new URL(uri);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    StringBuilder sb = new StringBuilder();
+
+                    bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+
+                    String json;
+                    while((json = bufferedReader.readLine())!= null){
+                        sb.append(json+"\n");
+                    }
+
+                    return sb.toString().trim();
+
+                }catch(Exception e){
+                    Log.d("getData", e.toString());
+                    return null;
+                }
+
+            }
+
+            @Override
+            protected void onPostExecute(String result){
+                //myJSON=result;
+//                Toast.makeText(MapsActivity.this, myJSON, Toast.LENGTH_SHORT).show();
+                //showList();
+            }
+        }
+        insertDATA g = new insertDATA();
+        g.execute(url);
     }
 
 }
