@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.LevelListDrawable;
 import android.location.Criteria;
@@ -16,6 +17,9 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,9 +28,15 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.chat.Chat;
+import org.jivesoftware.smack.chat.ChatManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,6 +45,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Calendar;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -42,9 +54,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String DOMAIN;
     String phpFILENAME;
     String url;
+    Button Btn_Swing;
+    String USERNAME_TO;
+    String BODY;
     private GoogleMap mMap;
     LatLng myPosition;
     final int REQUEST_CODE_LOCATION = 2;
+    public static ArrayList<User> Users = MainActivity.getUserObject();
+    final ChatManager chatManager = MainActivity.getChatManagerObject();
+    public static ListView mListView = MainActivity.mListView;
+    public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,10 +83,62 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         DOMAIN = LoginActivity.getDOMAIN();
-        phpFILENAME = "selectAll.php";
-        url = "http://"+DOMAIN+"/"+phpFILENAME;
-        //Toast.makeText(MapsActivity.this, url, Toast.LENGTH_SHORT).show();
+        phpFILENAME = "selectNear.php";
+        url = "http://"+DOMAIN+"/"+phpFILENAME+"?username="+USERNAME;
         getData(url);
+
+        Btn_Swing = (Button) findViewById(R.id.btn_swing);
+        Btn_Swing.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(Btn_Swing.getText() != "Send") {
+                    Toast.makeText(MapsActivity.this, "Swing", Toast.LENGTH_SHORT).show();
+                } else {
+                    Intent intent = getIntent();
+                    BODY=intent.getExtras().getString("BODY");
+
+                    Chat chat = chatManager.createChat(USERNAME_TO + "@jaeseok");
+                    try {
+                        chat.sendMessage(BODY);
+
+                        Calendar time = Calendar.getInstance();
+
+                        String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                                + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
+
+                        int idx = findUsername(USERNAME_TO);
+                        if(idx == -1) {
+                            Users.add(new User(USERNAME_TO));
+                            idx = findUsername(USERNAME_TO);
+                            Users.get(idx).addMessage(BODY, time, false);
+
+                            mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                    Users.get(idx).fromName,
+                                    Users.get(idx).getLastMessageBody(),
+                                    cur_time);
+                        }
+                        else {
+                            Users.get(idx).addMessage(BODY, time, false);
+
+                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
+                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
+                        }
+
+                        mAdapter.dataChange();
+
+                        finish();
+
+                    } catch (SmackException.NotConnectedException e) {
+                        Log.d("SendMsg", e.toString());
+                        Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
+                    }
+
+
+
+                }
+            }
+        });
+
     }
 
 
@@ -116,6 +187,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             mMap.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
             mMap.moveCamera(CameraUpdateFactory.zoomTo(17));
+
+            // Instantiates a new CircleOptions object and defines the center and radius
+            CircleOptions circleOptions = new CircleOptions()
+                    .center(new LatLng(latitude, longitude))
+                    .radius(120)
+                    .strokeColor(Color.argb(100, 102, 255, 102))
+                    .fillColor(Color.argb(40, 102, 255, 102));
+
+            // Get back the mutable Circle
+            Circle circle = mMap.addCircle(circleOptions);
+
+            mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+                @Override
+                public boolean onMarkerClick(final Marker marker) {
+                    marker.showInfoWindow();
+                    USERNAME_TO = new String(marker.getTitle());
+                    //Toast.makeText(MapsActivity.this,  marker.getTitle(), Toast.LENGTH_SHORT).show();
+                    Btn_Swing.setText("Send");
+                    return true;
+                }
+            });
         }
 
     }
@@ -166,7 +258,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if (username != USERNAME) {
                             mMap.addMarker(new MarkerOptions()
                                     .position(new LatLng(latitude, longitude))
-                                    .title(username));
+                                    .title(username)
+                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker)));
                         }
 
                     }
@@ -183,6 +276,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-
+    public int findUsername(String fromName) {
+        for(int i=0; i<this.Users.size(); i++) {
+            if(this.Users.get(i).fromName.equals(fromName))
+                return i;
+        }
+        return -1;
+    }
 
 }

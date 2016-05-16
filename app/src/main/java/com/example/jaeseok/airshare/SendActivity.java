@@ -23,12 +23,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 public class SendActivity extends Activity {
-    final ChatManager chatManager = MainActivity.getChatManagerObject();
-    public static ArrayList<User> Users = MainActivity.getUserObject();
-//    public static TextView textView = MainActivity.getTextView();
-    public static ListView mListView = MainActivity.mListView;
-    public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
-
     Button Btn_Send;
     EditText Text_To;
     EditText Text_Body;
@@ -61,55 +55,14 @@ public class SendActivity extends Activity {
                 }
 
                 Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
+                intentMapsActivity.putExtra("BODY", BODY);
                 startActivity(intentMapsActivity);
 
-                /*
-                Chat chat = chatManager.createChat(USERNAME_TO + "@jaeseok");
-                try {
-                    chat.sendMessage(BODY);
 
-                    Calendar time = Calendar.getInstance();
-
-                    String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
-                            + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
-
-                    int idx = findUsername(USERNAME_TO);
-                    if(idx == -1) {
-                        Users.add(new User(USERNAME_TO));
-                        idx = findUsername(USERNAME_TO);
-                        Users.get(idx).addMessage(BODY, time, false);
-
-                        mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
-                                Users.get(idx).fromName,
-                                Users.get(idx).getLastMessageBody(),
-                                cur_time);
-                    }
-                    else {
-                        Users.get(idx).addMessage(BODY, time, false);
-
-                        mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
-                        mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
-                    }
-
-                    mAdapter.dataChange();
-
-                    finish();
-
-                } catch (SmackException.NotConnectedException e) {
-                    Log.d("SendMsg", e.toString());
-                    Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
-                }
-                */
             }
         });
 
     }
 
-    public int findUsername(String fromName) {
-        for(int i=0; i<this.Users.size(); i++) {
-            if(this.Users.get(i).fromName.equals(fromName))
-                return i;
-        }
-        return -1;
-    }
+
 }
