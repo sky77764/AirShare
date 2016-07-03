@@ -46,13 +46,12 @@ public class LocationService extends Service {
 
 //            float distance = mDestination.distanceTo(location);
             String message = "lat: " + String.valueOf(location.getLatitude()) + ", long: " + String.valueOf(location.getLongitude());
-            Log.d("onLocationChanged", message);
+           // Log.d("onLocationChanged", message);
 
             //intent = new Intent();
            // DOMAIN=(String) intent.getExtras().get("DOMAIN");
            // USERNAME = (String) intent.getExtras().get("USERNAME");
             url = "http://"+DOMAIN+"/"+phpFILENAME+"?username="+USERNAME+"&latitude="+String.valueOf(location.getLatitude())+"&longitude="+String.valueOf(location.getLongitude());
-            //Toast.makeText(MapsActivity.this, url, Toast.LENGTH_SHORT).show();
             insertData(url);
             Log.d("onLocationChanged2", url);
 

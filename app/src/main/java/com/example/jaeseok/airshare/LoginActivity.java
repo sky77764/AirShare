@@ -1,6 +1,7 @@
 package com.example.jaeseok.airshare;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBar;
@@ -32,6 +33,7 @@ public class LoginActivity extends AppCompatActivity {
     public static String USERNAME;
     String USERNAME2;
     String PASSWORD;
+    ComponentName locService;
 
     private static final boolean AUTO_HIDE = true;
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
@@ -104,11 +106,10 @@ public class LoginActivity extends AppCompatActivity {
             public void onClick(View v) {
                 EditText id = (EditText) findViewById(R.id.TVid);
                 EditText pw = (EditText) findViewById(R.id.TVpw);
-                EditText ipaddr = (EditText) findViewById(R.id.TVipaddr);
 
                 USERNAME = id.getText().toString();
                 PASSWORD = pw.getText().toString();
-                DOMAIN = ipaddr.getText().toString();
+                DOMAIN = "52.6.95.227";
                 USERNAME2 = USERNAME;
                 DOMAIN2 = DOMAIN;
 
@@ -222,11 +223,17 @@ public class LoginActivity extends AppCompatActivity {
                 Log.i("User Logged In", USERNAME);
                 mConnection = mConnection_temp;
 
+                if(locService != null) {
+                    Intent i = new Intent();
+                    i.setComponent(locService);
+                    stopService(i);
+                }
 
                 Intent intent = new Intent(LoginActivity.this, LocationService.class);
+
                 intent.putExtra("DOMAIN", DOMAIN2);
                 intent.putExtra("USERNAME", USERNAME2);
-                startService(intent);
+                locService = startService(intent);
 
                 Intent intentMainActivity = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intentMainActivity);
@@ -235,6 +242,8 @@ public class LoginActivity extends AppCompatActivity {
             else {
                 Toast errMsg = Toast.makeText(getApplicationContext(), "Sign in Failed!", Toast.LENGTH_SHORT);
                 errMsg.show();
+                Toast err2 = Toast.makeText(getApplicationContext(), DOMAIN, Toast.LENGTH_SHORT);
+                err2.show();
             }
         }
     }

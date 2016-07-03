@@ -44,6 +44,7 @@ public class ChatActivity extends ActionBarActivity {
     public static String USERNAME_TO;
     public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
     public static boolean isChatActivityInFront = false;
+    public static String DOMAIN = LoginActivity.getDOMAIN();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,7 +121,7 @@ public class ChatActivity extends ActionBarActivity {
                 }
 
 
-                Chat chat = chatManager.createChat(USERNAME_TO + "@jaeseok");
+                Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
                 try {
                     chat.sendMessage(messageText);
 
