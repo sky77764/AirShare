@@ -52,6 +52,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Vector;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
@@ -492,12 +493,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     //Btn_Swing.setTextColor(Color.WHITE);
                     Btn_Swing.setClickable(true);
 
+                    calculateReceiver(from, SWING_start_region, SWING_end_region);
                 }
                 direction_cnt = 0;
             }
         }
-
-        //valueView.setText(String.format("Azimuth: %1$1.2f, Pitch: %2$1.2f, Roll: %3$1.2f",
-        //        values[0], values[1], values[2]));
     }
+
+    private void calculateReceiver(LatLng userLocation, double start_region, double end_region){
+        if(prev_markers == null)
+            return ;
+
+        Vector<Receivers> Receiver = new Vector<Receivers>();
+
+        for (int i=0; i < prev_markers.size(); i++) {
+            Receivers temp = new Receivers();
+            Log.d("fillData", "[" + prev_markers.elementAt(i).getTitle() + "]");
+            temp.fillData(i, prev_markers.elementAt(i).getPosition(), userLocation, start_region, end_region);
+            if(temp.isIncluded) {
+//                prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+                Receiver.addElement(temp);
+            }
+        }
+        Collections.sort(Receiver);
+//        for (int i=0; i<Receiver.size(); i++) {
+            prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+            prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();
+//        }
+
+
+
+    }
+
+
 }
