@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -89,6 +90,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     float SWING_plus_max = -10;
     float SWING_start_region;
     float SWING_end_region;
+    Vector<Receivers> Receiver = new Vector<Receivers>();
 
 
     @Override
@@ -139,9 +141,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Btn_Swing.setClickable(false);
 
                 } else {
+                    Toast.makeText(getApplicationContext(), "111", Toast.LENGTH_SHORT).show();
                     Intent intent = getIntent();
                     BODY = intent.getExtras().getString("BODY");
 
+                    Toast.makeText(getApplicationContext(), "222", Toast.LENGTH_SHORT).show();
                     Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
                     try {
                         chat.sendMessage(BODY);
@@ -150,7 +154,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
                                 + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
-
+                        Toast.makeText(getApplicationContext(), "333", Toast.LENGTH_SHORT).show();
                         int idx = findUsername(USERNAME_TO);
                         if (idx == -1) {
                             Users.add(new User(USERNAME_TO));
@@ -167,7 +171,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
                             mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
                         }
-
+                        Toast.makeText(getApplicationContext(), "444", Toast.LENGTH_SHORT).show();
                         mAdapter.dataChange();
 
                         finish();
@@ -209,6 +213,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         }
         mMap.getUiSettings().setCompassEnabled(true);
+        mMap.setInfoWindowAdapter(new MyInfoWindowAdapter());
+        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener()
+        {
+            int i=0;
+            @Override
+            public void onInfoWindowClick(Marker arg0) {
+                Log.d("onInfoWindowClick", "i: " + String.valueOf(i) + ", Receiver.size(): " + String.valueOf(Receiver.size()));
+                if(i < Receiver.size()) {
+                    arg0.hideInfoWindow();
+                    arg0.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+                    i = (i+1) % Receiver.size();
+                    prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+                    prev_markers.elementAt(Receiver.elementAt(i).index).showInfoWindow();
+
+                }
+            }
+
+        });
 
         // Getting LocationManager object from System Service LOCATION_SERVICE
         final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
@@ -228,6 +250,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             final Context temp = this;
             h.postDelayed(new Runnable() {
                 Circle circle;
+                boolean first_time = true;
 
                 public void run() {
                     if (ActivityCompat.checkSelfPermission(temp, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(temp, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -243,8 +266,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     myPosition = new LatLng(latitude, longitude);
 
-                    mMap.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
-                    mMap.moveCamera(CameraUpdateFactory.zoomTo(17));
+                    if(first_time) {
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
+                        mMap.moveCamera(CameraUpdateFactory.zoomTo(17));
+                        first_time = false;
+                    }
+
 
                     // Instantiates a new CircleOptions object and defines the center and radius
                     CircleOptions circleOptions = new CircleOptions()
@@ -481,9 +508,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     direction_line_opt.add(from, to).color(Color.argb(100, 0, 255, 0)).width(6);
                     mMap.addPolyline(direction_line_opt);
 
-                    Log.d("SWING", "[plus]max: " + String.valueOf(SWING_plus_max) + ", min: " + String.valueOf(SWING_plus_min));
-                    Log.d("SWING", "[minus]max: " + String.valueOf(SWING_minus_max) + ", min: " + String.valueOf(SWING_minus_min));
-                    Log.d("SWING", "start: " + String.valueOf(SWING_start_region) + ", end: " + String.valueOf(SWING_end_region));
+//                    Log.d("SWING", "[plus]max: " + String.valueOf(SWING_plus_max) + ", min: " + String.valueOf(SWING_plus_min));
+//                    Log.d("SWING", "[minus]max: " + String.valueOf(SWING_minus_max) + ", min: " + String.valueOf(SWING_minus_min));
+//                    Log.d("SWING", "start: " + String.valueOf(SWING_start_region) + ", end: " + String.valueOf(SWING_end_region));
 
                     Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                     // Vibrate for 500 milliseconds
@@ -504,7 +531,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(prev_markers == null)
             return ;
 
-        Vector<Receivers> Receiver = new Vector<Receivers>();
+//        Vector<Receivers> Receiver = new Vector<Receivers>();
+//        if(Receiver != null)
+//            Receiver.clear();
 
         for (int i=0; i < prev_markers.size(); i++) {
             Receivers temp = new Receivers();
@@ -515,13 +544,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Receiver.addElement(temp);
             }
         }
-        Collections.sort(Receiver);
-//        for (int i=0; i<Receiver.size(); i++) {
+        if(Receiver.size() > 0) {
+            Collections.sort(Receiver);
             prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
             prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();
-//        }
+            Btn_Swing.setText("Send");
+        }
+    }
 
+    class MyInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
 
+        private View myContentsView;
+
+        MyInfoWindowAdapter(){
+            myContentsView = getLayoutInflater().inflate(R.layout.custom_infowindow, null);
+        }
+
+        @Override
+        public View getInfoContents(Marker marker) {
+            TextView tvTitle = ((TextView)myContentsView.findViewById(R.id.title));
+            tvTitle.setText(marker.getTitle());
+            Log.d("getInfoContents", marker.getTitle());
+            TextView tvSnippet = ((TextView)myContentsView.findViewById(R.id.snippet));
+            tvSnippet.setText(marker.getSnippet());
+            tvSnippet.setText("Snippet");
+
+            return myContentsView;
+        }
+
+        @Override
+        public View getInfoWindow(Marker marker) {
+            // TODO Auto-generated method stub
+            return null;
+        }
 
     }
 
