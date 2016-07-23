@@ -59,9 +59,6 @@ public class ChatActivity extends ActionBarActivity {
 
         getSupportActionBar().setTitle(USERNAME_TO);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        Toast.makeText(ChatActivity.this, Users.get(Users_idx).fromName, Toast.LENGTH_SHORT).show();
-
     }
 
     @Override

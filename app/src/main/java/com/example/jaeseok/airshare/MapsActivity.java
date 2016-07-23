@@ -80,7 +80,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private float[] mGravity;
     private float[] mMagnetic;
     Polyline direction_line;
-    PolylineOptions direction_line_opt = new PolylineOptions();
+
     int direction_cnt = 0;
     boolean SWING_MODE = false;
     int SWING_MODE_cnt = 0;
@@ -92,6 +92,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     float SWING_end_region;
     Vector<Receivers> Receiver = new Vector<Receivers>();
 
+    Polyline firstPolyline, secondPolyline;
+    boolean bPolylineCreated = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +102,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         DisplayMetrics metrics = getResources().getDisplayMetrics();
         int screenWidth = (int) (metrics.widthPixels * 0.80);
         int screenHeight = (int) (metrics.heightPixels * 0.73);
+        bPolylineCreated = false;
 
         setContentView(R.layout.activity_send);
         getWindow().setLayout(screenWidth, screenHeight);
@@ -123,6 +127,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 if (Btn_Swing.getText() != "Send") {
+                    if(bPolylineCreated) {
+                        firstPolyline.remove();
+                        secondPolyline.remove();
+                    }
                     SWING_MODE = true;
                     SWING_MODE_cnt = 0;
                     direction_cnt = 0;
@@ -141,11 +149,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Btn_Swing.setClickable(false);
 
                 } else {
-                    Toast.makeText(getApplicationContext(), "111", Toast.LENGTH_SHORT).show();
                     Intent intent = getIntent();
                     BODY = intent.getExtras().getString("BODY");
 
-                    Toast.makeText(getApplicationContext(), "222", Toast.LENGTH_SHORT).show();
                     Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
                     try {
                         chat.sendMessage(BODY);
@@ -154,7 +160,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
                                 + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
-                        Toast.makeText(getApplicationContext(), "333", Toast.LENGTH_SHORT).show();
                         int idx = findUsername(USERNAME_TO);
                         if (idx == -1) {
                             Users.add(new User(USERNAME_TO));
@@ -171,10 +176,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
                             mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
                         }
-                        Toast.makeText(getApplicationContext(), "444", Toast.LENGTH_SHORT).show();
                         mAdapter.dataChange();
 
-                        finish();
+                        Intent intentChatActivity = new Intent(MapsActivity.this, ChatActivity.class);
+                        intentChatActivity.putExtra("Users_idx", findUsername(USERNAME_TO));
+                        startActivity(intentChatActivity);
+//                        finish();
+//                        Intent intent2 = new Intent(getApplicationContext(), MainActivity.class);
+//                        intent2.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                        intent2.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+//                        startActivity(intent2);
+
 
                     } catch (SmackException.NotConnectedException e) {
                         Log.d("SendMsg", e.toString());
@@ -200,6 +212,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        bPolylineCreated = false;
         mMap = googleMap;
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -226,6 +239,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     i = (i+1) % Receiver.size();
                     prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
                     prev_markers.elementAt(Receiver.elementAt(i).index).showInfoWindow();
+                    USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
 
                 }
             }
@@ -243,6 +257,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Getting Current Location
         Location location = locationManager.getLastKnownLocation(provider);
+
+        int iter=0;
+        while(location == null) {
+            location = locationManager.getLastKnownLocation(provider);
+            iter++;
+            if(iter == 50)
+                break;
+        }
 
         if (location != null) {
 
@@ -502,11 +524,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     LatLng from = new LatLng(latitude, longitude);
                     double r = 0.001;
                     LatLng to = new LatLng(latitude + r * Math.cos(SWING_start_region), longitude + r * Math.sin(SWING_start_region));
-                    direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(2);
-                    mMap.addPolyline(direction_line_opt);
+                    PolylineOptions direction_line_opt = new PolylineOptions();
+                    direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(4);
+                    firstPolyline = mMap.addPolyline(direction_line_opt);
+
                     to = new LatLng(latitude + r * Math.cos(SWING_end_region), longitude + r * Math.sin(SWING_end_region));
-                    direction_line_opt.add(from, to).color(Color.argb(100, 0, 255, 0)).width(6);
-                    mMap.addPolyline(direction_line_opt);
+                    PolylineOptions direction_line_opt2 = new PolylineOptions();
+                    direction_line_opt2.add(from, to).color(Color.argb(100, 0, 0, 255)).width(6);
+                    secondPolyline = mMap.addPolyline(direction_line_opt2);
+                    bPolylineCreated = true;
+
 
 //                    Log.d("SWING", "[plus]max: " + String.valueOf(SWING_plus_max) + ", min: " + String.valueOf(SWING_plus_min));
 //                    Log.d("SWING", "[minus]max: " + String.valueOf(SWING_minus_max) + ", min: " + String.valueOf(SWING_minus_min));

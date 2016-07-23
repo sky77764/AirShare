@@ -51,6 +51,10 @@ public class LocationService extends Service {
             //intent = new Intent();
            // DOMAIN=(String) intent.getExtras().get("DOMAIN");
            // USERNAME = (String) intent.getExtras().get("USERNAME");
+            if(DOMAIN == null) {
+                stopSelf();
+                return;
+            }
             url = "http://"+DOMAIN+"/"+phpFILENAME+"?username="+USERNAME+"&latitude="+String.valueOf(location.getLatitude())+"&longitude="+String.valueOf(location.getLongitude());
             insertData(url);
             Log.d("onLocationChanged2", url);
