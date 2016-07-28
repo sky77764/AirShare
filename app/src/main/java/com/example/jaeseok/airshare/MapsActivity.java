@@ -27,6 +27,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -181,12 +182,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Intent intentChatActivity = new Intent(MapsActivity.this, ChatActivity.class);
                         intentChatActivity.putExtra("Users_idx", findUsername(USERNAME_TO));
                         startActivity(intentChatActivity);
-//                        finish();
-//                        Intent intent2 = new Intent(getApplicationContext(), MainActivity.class);
-//                        intent2.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//                        intent2.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-//                        startActivity(intent2);
-
 
                     } catch (SmackException.NotConnectedException e) {
                         Log.d("SendMsg", e.toString());
@@ -246,28 +241,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         });
 
-        // Getting LocationManager object from System Service LOCATION_SERVICE
-        final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if(LocationService.latitude == -1 && LocationService.longitude == -1) {
+            Toast.makeText(MapsActivity.this, "Enable GPS!", Toast.LENGTH_SHORT).show();
 
-        // Creating a criteria object to retrieve provider
-        Criteria criteria = new Criteria();
-
-        // Getting the name of the best provider
-        final String provider = locationManager.getBestProvider(criteria, true);
-
-        // Getting Current Location
-        Location location = locationManager.getLastKnownLocation(provider);
-
-        int iter=0;
-        while(location == null) {
-            location = locationManager.getLastKnownLocation(provider);
-            iter++;
-            if(iter == 50)
-                break;
+            if(LoginActivity.locService != null) {
+                Intent i = new Intent();
+                i.setComponent(LoginActivity.locService);
+                stopService(i);
+            }
+            Intent intent = new Intent(MapsActivity.this, LocationService.class);
+            intent.putExtra("DOMAIN", LoginActivity.DOMAIN);
+            intent.putExtra("USERNAME", LoginActivity.USERNAME);
+            LoginActivity.locService = startService(intent);
+            finish();
         }
 
-        if (location != null) {
-
+        else {
             final int delay = 1000; //milliseconds
             final Context temp = this;
             h.postDelayed(new Runnable() {
@@ -279,12 +268,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Toast.makeText(MapsActivity.this, "GPS Permission denied!", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    Location cur_location = locationManager.getLastKnownLocation(provider);
-                    if(cur_location == null)
-                        return;
 
-                    latitude = cur_location.getLatitude();
-                    longitude = cur_location.getLongitude();
+                    latitude = LocationService.latitude;
+                    longitude = LocationService.longitude;
+                    Log.d("onLocationChanged1", "latitude=" + latitude + ", longitude=" + longitude);
 
                     myPosition = new LatLng(latitude, longitude);
 
@@ -317,10 +304,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(final Marker marker) {
+                    for(int i=0; i<prev_markers.size(); i++)
+                        prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+
+                    marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
                     marker.showInfoWindow();
                     USERNAME_TO = new String(marker.getTitle());
                     //Toast.makeText(MapsActivity.this,  marker.getTitle(), Toast.LENGTH_SHORT).show();
                     Btn_Swing.setText("Send");
+
                     return true;
                 }
             });
@@ -422,6 +414,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         .position(new LatLng(latitude, longitude))
                                         .title(username)
                                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker)));
+
                                 markers.add(m);
                             }
                             else {
@@ -485,7 +478,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(SWING_MODE) {
             direction_cnt++;
             SWING_MODE_cnt++;
+
             if(direction_cnt == 5) {
+                LatLng from_temp = new LatLng(latitude, longitude);
+                LatLng to_temp = new LatLng(latitude + values[0] * Math.cos(SWING_start_region), longitude + values[0] * Math.sin(SWING_start_region));
+                PolylineOptions direction_line_opt_temp = new PolylineOptions();
+                direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 0)).width(3);
+                mMap.addPolyline(direction_line_opt_temp);
                 Log.d("SWING", "values[0]: " + String.valueOf(values[0]));
                 if(values[0] < 0) {
                     if(values[0] < SWING_minus_min)
@@ -525,7 +524,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     double r = 0.001;
                     LatLng to = new LatLng(latitude + r * Math.cos(SWING_start_region), longitude + r * Math.sin(SWING_start_region));
                     PolylineOptions direction_line_opt = new PolylineOptions();
-                    direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(4);
+                    direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(6);
                     firstPolyline = mMap.addPolyline(direction_line_opt);
 
                     to = new LatLng(latitude + r * Math.cos(SWING_end_region), longitude + r * Math.sin(SWING_end_region));
@@ -533,6 +532,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     direction_line_opt2.add(from, to).color(Color.argb(100, 0, 0, 255)).width(6);
                     secondPolyline = mMap.addPolyline(direction_line_opt2);
                     bPolylineCreated = true;
+
+//                    Toast.makeText(getApplicationContext(), "start=" + SWING_start_region + ", end=" + SWING_end_region, Toast.LENGTH_LONG).show();
 
 
 //                    Log.d("SWING", "[plus]max: " + String.valueOf(SWING_plus_max) + ", min: " + String.valueOf(SWING_plus_min));
@@ -564,13 +565,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         for (int i=0; i < prev_markers.size(); i++) {
             Receivers temp = new Receivers();
-            Log.d("fillData", "[" + prev_markers.elementAt(i).getTitle() + "]");
+//            Log.d("fillData", "[" + prev_markers.elementAt(i).getTitle() + "]");
             temp.fillData(i, prev_markers.elementAt(i).getPosition(), userLocation, start_region, end_region);
             if(temp.isIncluded) {
 //                prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
                 Receiver.addElement(temp);
             }
         }
+
         if(Receiver.size() > 0) {
             Collections.sort(Receiver);
             prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
@@ -606,6 +608,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
     }
+
+
 
 
 }

@@ -39,28 +39,21 @@ public class LocationService extends Service {
     String phpFILENAME = "insert.php";
     String url;
     Intent intent;
+    public static double latitude, longitude;
 
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
 
-//            float distance = mDestination.distanceTo(location);
-            String message = "lat: " + String.valueOf(location.getLatitude()) + ", long: " + String.valueOf(location.getLongitude());
-           // Log.d("onLocationChanged", message);
-
-            //intent = new Intent();
-           // DOMAIN=(String) intent.getExtras().get("DOMAIN");
-           // USERNAME = (String) intent.getExtras().get("USERNAME");
             if(DOMAIN == null) {
                 stopSelf();
                 return;
             }
-            url = "http://"+DOMAIN+"/"+phpFILENAME+"?username="+USERNAME+"&latitude="+String.valueOf(location.getLatitude())+"&longitude="+String.valueOf(location.getLongitude());
+            url = "http://"+DOMAIN+"/"+phpFILENAME+"?username="+USERNAME+"&latitude="+String.valueOf(latitude)+"&longitude="+String.valueOf(longitude);
             insertData(url);
             Log.d("onLocationChanged2", url);
-
-
-
         }
 
         @Override
@@ -88,6 +81,7 @@ public class LocationService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("LocationService", "onStart: " + intent);
+        latitude = longitude = -1;
 
         LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 

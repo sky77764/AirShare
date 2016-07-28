@@ -33,7 +33,7 @@ public class LoginActivity extends AppCompatActivity {
     public static String USERNAME;
     String USERNAME2;
     String PASSWORD;
-    ComponentName locService;
+    public static ComponentName locService;
 
     private static final boolean AUTO_HIDE = true;
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
