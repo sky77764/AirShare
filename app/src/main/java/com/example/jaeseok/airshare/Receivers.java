@@ -21,14 +21,6 @@ public class Receivers implements Comparable<Object>{
         calculateDegree(userLocation);
         isIncludedTest(start_region, end_region);
 
-        /*
-        if(end_region-start_region <= Math.PI && this.degree > start_region && this.degree < end_region)
-            isIncluded = true;
-        else if(end_region-start_region > Math.PI && this.degree < start_region && this.degree > end_region)
-            isIncluded = true;
-        else
-            isIncluded = false;
-        */
 
         Log.d("fillData", "index: " + String.valueOf(index) + ", pos.lat: " + String.valueOf(this.pos.latitude) +
                 ", pos.long: " + String.valueOf(this.pos.longitude) + ", distance: " + String.valueOf(this.distance) +
@@ -101,7 +93,6 @@ public class Receivers implements Comparable<Object>{
             brng = brng - 2*Math.PI;
         }
         this.degree = brng;
-
     }
 
     private static double deg2rad(double deg) {

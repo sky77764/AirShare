@@ -33,6 +33,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
@@ -75,6 +76,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Vector<Marker> prev_markers;
     final Handler h = new Handler();
     double latitude, longitude;
+    float bearing;
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer, mField;
@@ -95,6 +97,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     Polyline firstPolyline, secondPolyline;
     boolean bPolylineCreated = false;
+    static LatLng prev_to;
+    final double motion_tuning = 0.3;
 
 
     @Override
@@ -132,6 +136,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         firstPolyline.remove();
                         secondPolyline.remove();
                     }
+                    prev_to = new LatLng(-10, -10);
                     SWING_MODE = true;
                     SWING_MODE_cnt = 0;
                     direction_cnt = 0;
@@ -181,7 +186,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         Intent intentChatActivity = new Intent(MapsActivity.this, ChatActivity.class);
                         intentChatActivity.putExtra("Users_idx", findUsername(USERNAME_TO));
-                        startActivity(intentChatActivity);
+                        startActivityForResult(intentChatActivity, 0);
 
                     } catch (SmackException.NotConnectedException e) {
                         Log.d("SendMsg", e.toString());
@@ -221,6 +226,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         }
         mMap.getUiSettings().setCompassEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
         mMap.setInfoWindowAdapter(new MyInfoWindowAdapter());
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener()
         {
@@ -271,7 +277,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     latitude = LocationService.latitude;
                     longitude = LocationService.longitude;
-                    Log.d("onLocationChanged1", "latitude=" + latitude + ", longitude=" + longitude);
+//                    bearing = LocationService.bearing;
+                    Log.d("onLocationChanged1", "latitude=" + latitude + ", longitude=" + longitude + ", bearing=" + bearing);
+
 
                     myPosition = new LatLng(latitude, longitude);
 
@@ -280,7 +288,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         mMap.moveCamera(CameraUpdateFactory.zoomTo(17));
                         first_time = false;
                     }
-
+                    if(!SWING_MODE) {
+                        CameraPosition cameraPosition = new CameraPosition.Builder()
+                                .target(new LatLng(latitude, longitude))             // Sets the center of the map to current location
+                                .zoom(17)                   // Sets the zoom
+                                .bearing(bearing) // Sets the orientation of the camera to east
+                                .tilt(55)                   // Sets the tilt of the camera to 0 degrees
+                                .build();                   // Creates a CameraPosition from the builder
+                        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                    }
 
                     // Instantiates a new CircleOptions object and defines the center and radius
                     CircleOptions circleOptions = new CircleOptions()
@@ -473,19 +489,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         float[] values = new float[3];
         SensorManager.getOrientation(temp, values);
         //Log.d("updateDirection()", String.valueOf(values[0]));
+        bearing = values[0] < 0 ? (float)rad2deg(values[0] + 2*(float)Math.PI) : (float)rad2deg(values[0]);
 
 
         if(SWING_MODE) {
-            direction_cnt++;
+//            direction_cnt++;
             SWING_MODE_cnt++;
 
-            if(direction_cnt == 5) {
-                LatLng from_temp = new LatLng(latitude, longitude);
-                LatLng to_temp = new LatLng(latitude + values[0] * Math.cos(SWING_start_region), longitude + values[0] * Math.sin(SWING_start_region));
-                PolylineOptions direction_line_opt_temp = new PolylineOptions();
+            LatLng from_temp = new LatLng(latitude, longitude);
+            double r_temp = 0.001;
+            LatLng to_temp = new LatLng(latitude + r_temp * Math.cos(values[0]), longitude + r_temp * Math.sin(values[0]));
+            boolean isIgnored = false;
+
+            PolylineOptions direction_line_opt_temp = new PolylineOptions();
+            if(prev_to.latitude != -10) {
+                double prev_direction_degree = calculateDegree(from_temp, prev_to);
+                double cur_direction_degree = calculateDegree(from_temp, to_temp);
+                double prev_cur_angle = Math.abs(prev_direction_degree - cur_direction_degree);
+
+//                Log.d("TuningTest", "[prev] "+ prev_to.latitude + " / " + prev_to.longitude + " / " + prev_direction_degree);
+//                Log.d("TuningTest", "[cur] "+ to_temp.latitude + " / " + to_temp.longitude + " / " + cur_direction_degree);
+
+                if(prev_cur_angle > motion_tuning && prev_cur_angle < 2*Math.PI - motion_tuning) {
+                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 255)).width(3);
+                    mMap.addPolyline(direction_line_opt_temp);
+                    isIgnored = true;
+                }
+
+            }
+
+            if(!isIgnored) {
                 direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 0)).width(3);
                 mMap.addPolyline(direction_line_opt_temp);
-                Log.d("SWING", "values[0]: " + String.valueOf(values[0]));
+                prev_to = to_temp;
+
                 if(values[0] < 0) {
                     if(values[0] < SWING_minus_min)
                         SWING_minus_min = values[0];
@@ -498,8 +535,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if(values[0] > SWING_plus_max)
                         SWING_plus_max = values[0];
                 }
+            }
 
-                if(SWING_minus_min < -3.0 && SWING_plus_max > 3.0) {
+            if(SWING_MODE_cnt >= 200) {
+                if(SWING_minus_min < -2.8 && SWING_plus_max > 2.8) {
                     SWING_start_region = SWING_minus_max;
                     SWING_end_region = SWING_plus_min;
                 }
@@ -516,22 +555,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     SWING_end_region = SWING_plus_max;
                 }
 
+                Log.d("SWING_MODE", "[minus] min=" + SWING_minus_min + ", max=" + SWING_minus_max);
+                Log.d("SWING_MODE", "[plus] min=" + SWING_plus_min + ", max=" + SWING_plus_max);
+                Log.d("SWING_MODE", "start: " + SWING_start_region + ", end: " + SWING_end_region);
 
-                if(SWING_MODE_cnt == 200) {
-                    SWING_MODE = false;
+                SWING_MODE = false;
 
-                    LatLng from = new LatLng(latitude, longitude);
-                    double r = 0.001;
-                    LatLng to = new LatLng(latitude + r * Math.cos(SWING_start_region), longitude + r * Math.sin(SWING_start_region));
-                    PolylineOptions direction_line_opt = new PolylineOptions();
-                    direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(6);
-                    firstPolyline = mMap.addPolyline(direction_line_opt);
+                LatLng from = new LatLng(latitude, longitude);
+                double r = 0.001;
+                LatLng to = new LatLng(latitude + r * Math.cos(SWING_start_region), longitude + r * Math.sin(SWING_start_region));
+                PolylineOptions direction_line_opt = new PolylineOptions();
+                direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(6);
+                firstPolyline = mMap.addPolyline(direction_line_opt);
 
-                    to = new LatLng(latitude + r * Math.cos(SWING_end_region), longitude + r * Math.sin(SWING_end_region));
-                    PolylineOptions direction_line_opt2 = new PolylineOptions();
-                    direction_line_opt2.add(from, to).color(Color.argb(100, 0, 0, 255)).width(6);
-                    secondPolyline = mMap.addPolyline(direction_line_opt2);
-                    bPolylineCreated = true;
+                to = new LatLng(latitude + r * Math.cos(SWING_end_region), longitude + r * Math.sin(SWING_end_region));
+                PolylineOptions direction_line_opt2 = new PolylineOptions();
+                direction_line_opt2.add(from, to).color(Color.argb(100, 0, 0, 255)).width(6);
+                secondPolyline = mMap.addPolyline(direction_line_opt2);
+                bPolylineCreated = true;
 
 //                    Toast.makeText(getApplicationContext(), "start=" + SWING_start_region + ", end=" + SWING_end_region, Toast.LENGTH_LONG).show();
 
@@ -540,17 +581,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                    Log.d("SWING", "[minus]max: " + String.valueOf(SWING_minus_max) + ", min: " + String.valueOf(SWING_minus_min));
 //                    Log.d("SWING", "start: " + String.valueOf(SWING_start_region) + ", end: " + String.valueOf(SWING_end_region));
 
-                    Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    // Vibrate for 500 milliseconds
-                    vibrator.vibrate(500);
-                    Btn_Swing.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.colorAccent));
-                    Btn_Swing.setText("Swing");
-                    //Btn_Swing.setTextColor(Color.WHITE);
-                    Btn_Swing.setClickable(true);
+                Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                // Vibrate for 500 milliseconds
+                vibrator.vibrate(500);
+                Btn_Swing.setBackgroundColor(ContextCompat.getColor(getApplicationContext(), R.color.colorAccent));
+                Btn_Swing.setText("Swing");
+                //Btn_Swing.setTextColor(Color.WHITE);
+                Btn_Swing.setClickable(true);
 
-                    calculateReceiver(from, SWING_start_region, SWING_end_region);
-                }
-                direction_cnt = 0;
+                calculateReceiver(from, SWING_start_region, SWING_end_region);
             }
         }
     }
@@ -609,7 +648,45 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+//        Log.d("TEST", "MapsActivity-onActivityResult " + resultCode);
+        switch (resultCode) {
+            case 100:
+                setResult(100);
+                finish();
+                break;
 
+            default:
+                break;
+        }
+    }
 
+    private double deg2rad(double deg) {
+        return (deg * Math.PI / 180.0);
+    }
+    private double rad2deg(double rad) {
+        return (rad * 180 / Math.PI);
+    }
 
+    private double calculateDegree(LatLng userLocation, LatLng markerLocation) {
+        // 가로 longitude 오른쪽이 큼, 세로 latitude 위쪽이 큼
+        double dLon = (markerLocation.longitude - userLocation.longitude);
+
+        double y = Math.sin(dLon) * Math.cos(markerLocation.latitude);
+        double x = Math.cos(userLocation.latitude) * Math.sin(markerLocation.latitude) - Math.sin(userLocation.latitude)
+                * Math.cos(markerLocation.latitude) * Math.cos(dLon);
+
+        double brng = Math.atan2(y, x);
+
+        brng = Math.toDegrees(brng);
+        brng = (brng + 360) % 360;
+        brng = 360 - brng;
+        brng = deg2rad(brng);
+        if(brng > Math.PI) {
+            brng = brng - 2*Math.PI;
+        }
+        return brng;
+    }
 }

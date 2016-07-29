@@ -203,6 +203,14 @@ public class ChatActivity extends ActionBarActivity {
         isChatActivityInFront = false;
     }
 
+    @Override
+    public void onBackPressed() {
+//        super.onBackPressed();
+        setResult(100);
+//        Log.d("TEST", "ChatActivity-onBackPressed");
+        finish();
+    }
+
     public int findUsername(String fromName) {
         for(int i=0; i<this.Users.size(); i++) {
             if(this.Users.get(i).fromName.equals(fromName))

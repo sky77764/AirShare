@@ -56,13 +56,28 @@ public class SendActivity extends Activity {
 
                 Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
                 intentMapsActivity.putExtra("BODY", BODY);
-                startActivity(intentMapsActivity);
+                startActivityForResult(intentMapsActivity,0);
 
 
             }
         });
 
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("TEST", "SendActivity-onActivityResult " + resultCode);
+        switch (resultCode) {
+            case 100:
+                finish();
+                break;
+
+            default:
+                break;
+        }
+    }
+
 
 
 }

@@ -40,12 +40,17 @@ public class LocationService extends Service {
     String url;
     Intent intent;
     public static double latitude, longitude;
+    public static float bearing;
 
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
+            DOMAIN = LoginActivity.getDOMAIN();
+            USERNAME = LoginActivity.getUSERNAME();
             latitude = location.getLatitude();
             longitude = location.getLongitude();
+//            if (location.hasBearing())
+                bearing = location.getBearing();
 
             if(DOMAIN == null) {
                 stopSelf();
@@ -98,6 +103,8 @@ public class LocationService extends Service {
         locationManager.removeUpdates(locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
                 locationListener);
+
+
 
         return START_STICKY;
     }
