@@ -98,7 +98,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Polyline firstPolyline, secondPolyline;
     boolean bPolylineCreated = false;
     static LatLng prev_to;
-    final double motion_tuning = 0.3;
+    final double motion_tuning = 0.7;
 
 
     @Override
@@ -128,6 +128,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         url = "http://" + DOMAIN + "/" + phpFILENAME + "?username=" + USERNAME;
 
         Btn_Swing = (Button) findViewById(R.id.btn_swing);
+        Btn_Swing.setEnabled(false);
         Btn_Swing.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -159,8 +160,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     BODY = intent.getExtras().getString("BODY");
 
                     Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
+                    Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
                     try {
                         chat.sendMessage(BODY);
+                        Log.d("createChat", BODY);
 
                         Calendar time = Calendar.getInstance();
 
@@ -179,8 +182,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         } else {
                             Users.get(idx).addMessage(BODY, time, false);
 
-                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
-                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
+                            idx = mAdapter.findUsername(USERNAME_TO);
+                            if(idx != 0) {
+                                mAdapter.remove(idx);
+                                mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                        USERNAME_TO,
+                                        BODY,
+                                        cur_time);
+                                Log.d("SENDMSG", "remove, " + idx);
+                            }
+                            else {
+                                Log.d("SENDMSG", "update, " + idx);
+                                mAdapter.mListData.get(idx).mBody = BODY;
+                                mAdapter.mListData.get(idx).mDate = cur_time;
+                            }
+
+//                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
+//                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
                         }
                         mAdapter.dataChange();
 
@@ -190,7 +208,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     } catch (SmackException.NotConnectedException e) {
                         Log.d("SendMsg", e.toString());
-                        Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Disconnected from the messaging server", Toast.LENGTH_SHORT).show();
                     }
 
 
@@ -225,7 +243,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     REQUEST_CODE_LOCATION);
 
         }
-        mMap.getUiSettings().setCompassEnabled(true);
+//        mMap.getUiSettings().setCompassEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
         mMap.setInfoWindowAdapter(new MyInfoWindowAdapter());
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener()
@@ -268,6 +286,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             h.postDelayed(new Runnable() {
                 Circle circle;
                 boolean first_time = true;
+                int loading_cnt = 0;
 
                 public void run() {
                     if (ActivityCompat.checkSelfPermission(temp, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(temp, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -285,10 +304,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     if(first_time) {
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
-                        mMap.moveCamera(CameraUpdateFactory.zoomTo(17));
+                        mMap.moveCamera(CameraUpdateFactory.zoomTo(16));
                         first_time = false;
                     }
-                    if(!SWING_MODE) {
+                    if(!SWING_MODE && loading_cnt > 3) {
+                        Btn_Swing.setEnabled(true);
                         CameraPosition cameraPosition = new CameraPosition.Builder()
                                 .target(new LatLng(latitude, longitude))             // Sets the center of the map to current location
                                 .zoom(17)                   // Sets the zoom
@@ -311,8 +331,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     circle = mMap.addCircle(circleOptions);
                     getData(url);
 
-                    h.postDelayed(this, delay);
 
+                    loading_cnt++;
+                    h.postDelayed(this, delay);
                 }
             }, delay);
 
@@ -332,6 +353,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     return true;
                 }
             });
+
         }
 
     }

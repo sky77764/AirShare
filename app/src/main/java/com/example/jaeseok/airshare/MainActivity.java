@@ -117,8 +117,13 @@ public class MainActivity extends AppCompatActivity
                         Log.d("ReceiveMsg", message.toString());
 
                         final String msg = new String(message.getBody());
-                        final String fromName = new String(message.getFrom().substring(0, message.getFrom().indexOf("@")));
-
+                        String fromName_temp;
+                        if(message.getFrom().contains("@"))
+                            fromName_temp = new String(message.getFrom().substring(0, message.getFrom().indexOf("@")));
+                        else
+                            fromName_temp = new String(message.getFrom());
+                        final String fromName = new String(fromName_temp);
+                        Log.d("ReceiveMsg", fromName + ": " + msg);
                         DelayInformation inf = null;
                         try {
                             inf = (DelayInformation)message.getExtension("x","jabber:x:delay");
@@ -137,6 +142,7 @@ public class MainActivity extends AppCompatActivity
 //                            timeStamp = date.toString();
 //                        }
 
+                        Log.d("ReceiveMsg", fromName + ": " + msg);
                         int idx = findUsername(fromName);
                         if(idx == -1) {
                             Users.add(new User(fromName));
@@ -147,12 +153,25 @@ public class MainActivity extends AppCompatActivity
                                     Users.get(idx).fromName,
                                     Users.get(idx).getLastMessageBody(),
                                     cur_time);
+                            Log.d("ReceiveMsg", "add, " + idx);
                         }
                         else {
                             Users.get(idx).addMessage(msg, time, true);
 
-                            mAdapter.mListData.get(mAdapter.findUsername(fromName)).mBody = msg;
-                            mAdapter.mListData.get(mAdapter.findUsername(fromName)).mDate = cur_time;
+                            idx = mAdapter.findUsername(fromName);
+                            if(idx != 0) {
+                                mAdapter.remove(idx);
+                                mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                        fromName,
+                                        msg,
+                                        cur_time);
+                                Log.d("ReceiveMsg", "remove, " + idx);
+                            }
+                            else {
+                                Log.d("ReceiveMsg", "update, " + idx);
+                                mAdapter.mListData.get(idx).mBody = msg;
+                                mAdapter.mListData.get(idx).mDate = cur_time;
+                            }
                         }
                         mAdapter.dataChange();
 
@@ -255,7 +274,7 @@ public class MainActivity extends AppCompatActivity
             addInfo.mBody = mBody;
             addInfo.mDate = mDate;
 
-            mListData.add(addInfo);
+            mListData.add(0, addInfo);
         }
 
         public void remove(int position){

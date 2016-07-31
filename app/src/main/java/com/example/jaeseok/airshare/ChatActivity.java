@@ -119,8 +119,10 @@ public class ChatActivity extends ActionBarActivity {
 
 
                 Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
+                Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
                 try {
                     chat.sendMessage(messageText);
+                    Log.d("createChat", messageText);
 
                     Calendar time = Calendar.getInstance();
                     String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
@@ -133,8 +135,23 @@ public class ChatActivity extends ActionBarActivity {
 
                     Users.get(Users_idx).addMessage(messageText, time, false);
 
-                    mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = messageText;
-                    mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
+                    int idx = mAdapter.findUsername(USERNAME_TO);
+                    if(idx != 0) {
+                        mAdapter.remove(idx);
+                        mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                USERNAME_TO,
+                                messageText,
+                                cur_time);
+                        Log.d("SENDMSG", "remove, " + idx);
+                    }
+                    else {
+                        Log.d("SENDMSG", "update, " + idx);
+                        mAdapter.mListData.get(idx).mBody = messageText;
+                        mAdapter.mListData.get(idx).mDate = cur_time;
+                    }
+
+//                    mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = messageText;
+//                    mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
                     mAdapter.dataChange();
 
                     displayMessage(chatMessage);
