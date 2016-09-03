@@ -4,7 +4,14 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -13,6 +20,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.support.v4.app.ActivityCompat;
@@ -23,6 +31,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +51,12 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.chat.Chat;
 import org.jivesoftware.smack.chat.ChatManager;
@@ -50,8 +65,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -77,7 +97,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     final Handler h = new Handler();
     double latitude, longitude;
     float bearing;
-
+    private View myContentsView;
+    private ImageView mImageProfile;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer, mField;
     private float[] mGravity;
@@ -99,6 +120,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     boolean bPolylineCreated = false;
     static LatLng prev_to;
     final double motion_tuning = 0.7;
+    private ApplicationClass applicationClass;
 
 
     @Override
@@ -108,6 +130,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         int screenWidth = (int) (metrics.widthPixels * 0.80);
         int screenHeight = (int) (metrics.heightPixels * 0.73);
         bPolylineCreated = false;
+
+        applicationClass = (ApplicationClass)getApplicationContext();
 
         setContentView(R.layout.activity_send);
         getWindow().setLayout(screenWidth, screenHeight);
@@ -257,7 +281,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     arg0.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
                     i = (i+1) % Receiver.size();
                     prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
-                    prev_markers.elementAt(Receiver.elementAt(i).index).showInfoWindow();
+                    new SetProfile(prev_markers.elementAt(Receiver.elementAt(i).index)).execute();
+//                    prev_markers.elementAt(Receiver.elementAt(i).index).showInfoWindow();
                     USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
 
                 }
@@ -345,7 +370,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
 
                     marker.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
-                    marker.showInfoWindow();
+                    new SetProfile(marker).execute();
                     USERNAME_TO = new String(marker.getTitle());
                     //Toast.makeText(MapsActivity.this,  marker.getTitle(), Toast.LENGTH_SHORT).show();
                     Btn_Swing.setText("Send");
@@ -637,17 +662,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(Receiver.size() > 0) {
             Collections.sort(Receiver);
             prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
-            prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();
+            new SetProfile(prev_markers.elementAt(Receiver.elementAt(0).index)).execute();
+//            prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();
             Btn_Swing.setText("Send");
         }
     }
 
-    class MyInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
+    public Bitmap getCircleBitmap(Bitmap bitmap) {
+        final int length = bitmap.getWidth() < bitmap.getHeight() ? bitmap.getWidth() : bitmap.getHeight();
+        Bitmap output = Bitmap.createBitmap(length, length, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, length, length);
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        int size = length / 2;
+        canvas.drawCircle(size, size, size, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
 
-        private View myContentsView;
+        return output;
+    }
+
+    class MyInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
 
         MyInfoWindowAdapter(){
             myContentsView = getLayoutInflater().inflate(R.layout.custom_infowindow, null);
+            mImageProfile = (ImageView)myContentsView.findViewById(R.id.profile);
         }
 
         @Override
@@ -711,4 +754,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         return brng;
     }
+
+    public class SetProfile extends AsyncTask<Void, Void, Boolean> {
+        private String id;
+        private Bitmap profile;
+        private Marker marker;
+
+        public SetProfile(Marker marker){
+            id = marker.getTitle();
+            this.marker = marker;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                URL url = new URL("http://52.6.95.227:8080/download.jsp?id=" + id);
+                HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+                connection.setDoInput(true);
+                connection.connect();
+                InputStream input = connection.getInputStream();
+
+                if(input != null) {
+                    profile = BitmapFactory.decodeStream(input);
+                    applicationClass.addBitmapToMemoryCache(id, profile);
+                    input.close();
+                    return true;
+                } else
+                    return false;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if(success && applicationClass.getBitmapFromMemCache(id) != null)
+                mImageProfile.setImageBitmap(getCircleBitmap(applicationClass.getBitmapFromMemCache(id)));
+            else
+                mImageProfile.setImageResource(R.drawable.default_profile);
+            marker.showInfoWindow();
+        }
+    }
 }
+
+

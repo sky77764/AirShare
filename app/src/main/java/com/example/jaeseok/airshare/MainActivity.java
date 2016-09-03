@@ -2,9 +2,17 @@ package com.example.jaeseok.airshare;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
@@ -21,6 +29,7 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -40,6 +49,7 @@ import org.w3c.dom.Text;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.io.File;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity
@@ -52,6 +62,27 @@ public class MainActivity extends AppCompatActivity
     public static ListViewAdapter mAdapter = null;
     public static String MONTHS[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
         "Sep", "Oct", "Nov", "Dec"};
+    private final int REQ_CODE_GET_PROFILE = 0;
+    private NavigationView navigationView;
+    private ApplicationClass applicationClass;
+
+    public Bitmap getCircleBitmap(Bitmap bitmap) {
+        final int length = bitmap.getWidth() < bitmap.getHeight() ? bitmap.getWidth() : bitmap.getHeight();
+        Bitmap output = Bitmap.createBitmap(length, length, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, length, length);
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        int size = length / 2;
+        canvas.drawCircle(size, size, size, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        return output;
+    }
 
 
     @Override
@@ -64,6 +95,7 @@ public class MainActivity extends AppCompatActivity
         getSupportActionBar().setTitle("Messages");
 
         Users = new ArrayList<>();
+        applicationClass = (ApplicationClass)getApplicationContext();
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -84,8 +116,16 @@ public class MainActivity extends AppCompatActivity
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        View header = navigationView.getHeaderView(0);
+        TextView user_name = (TextView)header.findViewById(R.id.userName);
+        user_name.setText(LoginActivity.getUSERNAME());
+        Bitmap selectedImage = applicationClass.getBitmapFromMemCache(LoginActivity.getUSERNAME());
+        if(selectedImage != null) {
+            ImageView user_profile = (ImageView)header.findViewById(R.id.imageView);
+            user_profile.setImageBitmap(getCircleBitmap(selectedImage));
+        }
 
         mListView = (ListView) findViewById(R.id.messageList);
 
@@ -195,7 +235,19 @@ public class MainActivity extends AppCompatActivity
                 });
             }
         });
+    }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == ChatActivity.RESULT_OK && (requestCode == REQ_CODE_GET_PROFILE)) {
+            Bitmap selectedImage = getCircleBitmap(applicationClass.getBitmapFromMemCache(LoginActivity.getUSERNAME()));
+            View header = navigationView.getHeaderView(0);
+            ImageView user_profile = (ImageView)header.findViewById(R.id.imageView);
+            user_profile.setImageBitmap(selectedImage);
+        }
     }
 
     public class ViewHolder {
@@ -251,8 +303,11 @@ public class MainActivity extends AppCompatActivity
             }
 
             ListData mData = mListData.get(position);
-
-            if (mData.mIcon != null) {
+            Bitmap profile = applicationClass.getBitmapFromMemCache(mData.mTitle);
+            if(profile != null){
+                holder.mIcon.setVisibility(View.VISIBLE);
+                holder.mIcon.setImageBitmap(getCircleBitmap(profile));
+            } else if (mData.mIcon != null) {
                 holder.mIcon.setVisibility(View.VISIBLE);
                 holder.mIcon.setImageDrawable(mData.mIcon);
             }else{
@@ -347,7 +402,11 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_contact) {
 
         } else if (id == R.id.nav_files) {
-
+            Intent intent = new Intent(MainActivity.this, FilesActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_profile) {
+            Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+            startActivityForResult(intent, REQ_CODE_GET_PROFILE);
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);

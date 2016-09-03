@@ -11,14 +11,13 @@
         android:padding="10dp"
         android:background="@android:color/white">
 
-        <EditText
-            android:id="@+id/messageEdit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+        <ImageButton
+            android:id="@+id/send_file"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:scaleType="fitCenter"
             android:layout_alignParentBottom="true"
-            android:layout_toLeftOf="@+id/chatSendButton"
-            android:autoText="true"
-            android:hint="type message" />
+            android:src="@drawable/ic_add"/>
 
         <Button
             android:id="@+id/chatSendButton"
@@ -29,6 +28,16 @@
             android:text="Send"
             android:textColor="@color/background_material_light"
             android:layout_alignParentBottom="true" />
+
+        <EditText
+            android:id="@+id/messageEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_toRightOf="@id/send_file"
+            android:layout_toLeftOf="@id/chatSendButton"
+            android:autoText="true"
+            android:hint="type message" />
 
         <ListView
             android:id="@+id/messagesContainer"

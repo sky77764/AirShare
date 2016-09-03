@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -45,6 +46,8 @@ public class ChatActivity extends ActionBarActivity {
     public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
     public static boolean isChatActivityInFront = false;
     public static String DOMAIN = LoginActivity.getDOMAIN();
+    private ImageButton mImageButton;
+    private final int REQ_CODE_GET_FILE_NAME = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,6 +104,7 @@ public class ChatActivity extends ActionBarActivity {
         messagesContainer = (ListView) findViewById(R.id.messagesContainer);
         messageET = (EditText) findViewById(R.id.messageEdit);
         sendBtn = (Button) findViewById(R.id.chatSendButton);
+        mImageButton = (ImageButton) findViewById(R.id.send_file);
 
         //TextView meLabel = (TextView) findViewById(R.id.meLbl);
         //TextView companionLabel = (TextView) findViewById(R.id.friendLabel);
@@ -166,7 +170,14 @@ public class ChatActivity extends ActionBarActivity {
             }
         });
 
-
+        mImageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ChatActivity.this, SendFileActivity.class);
+                intent.putExtra("to", USERNAME_TO);
+                startActivityForResult(intent, REQ_CODE_GET_FILE_NAME);
+            }
+        });
     }
 
     public static void displayMessage(ChatMessage message) {
@@ -177,6 +188,61 @@ public class ChatActivity extends ActionBarActivity {
 
     public static void scroll() {
         messagesContainer.setSelection(messagesContainer.getCount() - 1);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == ChatActivity.RESULT_OK && (requestCode == REQ_CODE_GET_FILE_NAME)) {
+            String messageText = data.getStringExtra("filename");
+
+            Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
+            Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+            try {
+                chat.sendMessage(messageText);
+                Log.d("createChat", messageText);
+
+                Calendar time = Calendar.getInstance();
+                String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                        + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
+                ChatMessage chatMessage = new ChatMessage();
+                chatMessage.setId(122);//dummy
+                chatMessage.setMessage(messageText);
+                chatMessage.setDate(cur_time);
+                chatMessage.setMe(true);
+
+                Users.get(Users_idx).addMessage(messageText, time, false);
+
+                int idx = mAdapter.findUsername(USERNAME_TO);
+                if(idx != 0) {
+                    mAdapter.remove(idx);
+                    mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                            USERNAME_TO,
+                            messageText,
+                            cur_time);
+                    Log.d("SENDMSG", "remove, " + idx);
+                }
+                else {
+                    Log.d("SENDMSG", "update, " + idx);
+                    mAdapter.mListData.get(idx).mBody = messageText;
+                    mAdapter.mListData.get(idx).mDate = cur_time;
+                }
+
+//                    mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = messageText;
+//                    mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
+                mAdapter.dataChange();
+
+                displayMessage(chatMessage);
+            }
+            catch (SmackException.NotConnectedException e) {
+                Log.d("SendMsg", e.toString());
+                Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
+            }
+
+            messageET.setText("");
+        }
     }
 
     public void loadHistory(){

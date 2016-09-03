@@ -3,6 +3,8 @@ package com.example.jaeseok.airshare;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -13,7 +15,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import com.example.jaeseok.airshare.api.FilesClient;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SASLAuthentication;
@@ -23,6 +29,9 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 
 public class LoginActivity extends AppCompatActivity {
@@ -34,6 +43,9 @@ public class LoginActivity extends AppCompatActivity {
     String USERNAME2;
     String PASSWORD;
     public static ComponentName locService;
+    private ApplicationClass applicationClass;
+    private FrameLayout login_form;
+    private ProgressBar login_progress;
 
     private static final boolean AUTO_HIDE = true;
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
@@ -86,13 +98,24 @@ public class LoginActivity extends AppCompatActivity {
     };
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        login_form.setVisibility(View.VISIBLE);
+        login_progress.setVisibility(View.GONE);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_login);
 
+        applicationClass = (ApplicationClass)getApplicationContext();
+
         mVisible = true;
         mControlsView = findViewById(R.id.fullscreen_content_controls);
+        login_form = (FrameLayout)findViewById(R.id.login_frame);
+        login_progress = (ProgressBar)findViewById(R.id.login_progress);
 
         Button Bsignin = (Button) findViewById(R.id.signin_button);
 
@@ -187,8 +210,46 @@ public class LoginActivity extends AppCompatActivity {
     private class SigninTask extends AsyncTask<Void, Void, String> {
         XMPPTCPConnection mConnection_temp;
 
+        public SigninTask(){
+            applicationClass.client = new FilesClient(USERNAME + ":" + USERNAME, PASSWORD,
+                    "http://52.6.95.227:8010/auth/v1.0");
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            login_form.setVisibility(View.GONE);
+            login_progress.setVisibility(View.VISIBLE);
+        }
+
         @Override
         protected String doInBackground(Void... urls) {
+
+            boolean result = false;
+
+            try {
+                result = applicationClass.client.login();
+                if(result) {
+                    applicationClass.getReady();
+                    applicationClass.cacheInit();
+                    java.net.URL url = new java.net.URL("http://52.6.95.227:8080/download.jsp?id=" + USERNAME);
+                    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+                    connection.setDoInput(true);
+                    connection.connect();
+                    InputStream input = connection.getInputStream();
+
+                    if(input != null) {
+                        Bitmap profile = BitmapFactory.decodeStream(input);
+                        input.close();
+                        applicationClass.addBitmapToMemoryCache(USERNAME, profile);
+                    }
+                }
+                else
+                    return "fail";
+            } catch(Exception e) {
+                e.printStackTrace();
+                return "fail";
+            }
 
             XMPPTCPConnectionConfiguration.Builder config = XMPPTCPConnectionConfiguration.builder();
             config.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
@@ -208,15 +269,15 @@ public class LoginActivity extends AppCompatActivity {
                 mConnection_temp.login(USERNAME, PASSWORD);
 
             } catch (SmackException | IOException | XMPPException e) {
-                Log.d("AsyncTask", e.toString());
+                e.printStackTrace();
                 return "fail";
             }
 
 
-        return "succeed";
-    }
+            return "succeed";
+        }
 
-    @Override
+        @Override
         protected void onPostExecute(String result) {
 
             if(result == "succeed") {
@@ -244,6 +305,8 @@ public class LoginActivity extends AppCompatActivity {
                 errMsg.show();
                 Toast err2 = Toast.makeText(getApplicationContext(), DOMAIN, Toast.LENGTH_SHORT);
                 err2.show();
+                login_form.setVisibility(View.VISIBLE);
+                login_progress.setVisibility(View.GONE);
             }
         }
     }
