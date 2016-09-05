@@ -29,6 +29,7 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -100,10 +101,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private View myContentsView;
     private ImageView mImageProfile;
     private SensorManager mSensorManager;
-    private Sensor mAccelerometer, mField;
+    private Sensor mAccelerometer, mField, mGravityAccel;
     private float[] mGravity;
     private float[] mMagnetic;
     Polyline direction_line;
+    boolean STOP_MAP_UPDATE;
 
     int direction_cnt = 0;
     boolean SWING_MODE = false;
@@ -114,6 +116,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     float SWING_plus_max = -10;
     float SWING_start_region;
     float SWING_end_region;
+    float cur_gravity = 0.0f;
+    float min_gravity = 10.0f;
+    float max_gravity = -10.0f;
     Vector<Receivers> Receiver = new Vector<Receivers>();
 
     Polyline firstPolyline, secondPolyline;
@@ -121,6 +126,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     static LatLng prev_to;
     final double motion_tuning = 0.7;
     private ApplicationClass applicationClass;
+
+    static float first_direction;
+    boolean first_direction_check = true;
 
 
     @Override
@@ -130,6 +138,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         int screenWidth = (int) (metrics.widthPixels * 0.80);
         int screenHeight = (int) (metrics.heightPixels * 0.73);
         bPolylineCreated = false;
+        STOP_MAP_UPDATE = false;
+        first_direction_check = true;
 
         applicationClass = (ApplicationClass)getApplicationContext();
 
@@ -145,6 +155,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        mGravityAccel = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
 
         DOMAIN = LoginActivity.getDOMAIN();
 //        phpFILENAME = "selectAll.php";
@@ -161,6 +172,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         firstPolyline.remove();
                         secondPolyline.remove();
                     }
+                    first_direction_check = true;
                     prev_to = new LatLng(-10, -10);
                     SWING_MODE = true;
                     SWING_MODE_cnt = 0;
@@ -291,7 +303,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
         if(LocationService.latitude == -1 && LocationService.longitude == -1) {
-            Toast.makeText(MapsActivity.this, "Enable GPS!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MapsActivity.this, "GPS를 켜거나 잠시후에 시도하십시오!", Toast.LENGTH_SHORT).show();
 
             if(LoginActivity.locService != null) {
                 Intent i = new Intent();
@@ -314,6 +326,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 int loading_cnt = 0;
 
                 public void run() {
+                    if(STOP_MAP_UPDATE)
+                        return;
+
                     if (ActivityCompat.checkSelfPermission(temp, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(temp, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                         Toast.makeText(MapsActivity.this, "GPS Permission denied!", Toast.LENGTH_SHORT).show();
                         return;
@@ -358,6 +373,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
                     loading_cnt++;
+
                     h.postDelayed(this, delay);
                 }
             }, delay);
@@ -366,6 +382,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(final Marker marker) {
+                    /*
                     for(int i=0; i<prev_markers.size(); i++)
                         prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
 
@@ -374,7 +391,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     USERNAME_TO = new String(marker.getTitle());
                     //Toast.makeText(MapsActivity.this,  marker.getTitle(), Toast.LENGTH_SHORT).show();
                     Btn_Swing.setText("Send");
-
+*/
                     return true;
                 }
             });
@@ -388,6 +405,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onResume();
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
         mSensorManager.registerListener(this, mField, SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(this, mGravityAccel, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
@@ -408,6 +426,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 break;
             case Sensor.TYPE_MAGNETIC_FIELD:
                 mMagnetic = event.values.clone();
+                break;
+            case Sensor.TYPE_GRAVITY:
+                cur_gravity = event.values[0];
+                Log.d("GRAVITY", Float.toString(event.values[0]));
                 break;
             default:
                 return;
@@ -543,6 +565,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //            direction_cnt++;
             SWING_MODE_cnt++;
 
+            if(first_direction_check) {
+                first_direction = values[0];
+                first_direction_check = false;
+            }
+
+            if(cur_gravity < min_gravity)
+                min_gravity = cur_gravity;
+            if(cur_gravity > max_gravity)
+                max_gravity = cur_gravity;
+
+            /*
             LatLng from_temp = new LatLng(latitude, longitude);
             double r_temp = 0.001;
             LatLng to_temp = new LatLng(latitude + r_temp * Math.cos(values[0]), longitude + r_temp * Math.sin(values[0]));
@@ -557,7 +590,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                Log.d("TuningTest", "[prev] "+ prev_to.latitude + " / " + prev_to.longitude + " / " + prev_direction_degree);
 //                Log.d("TuningTest", "[cur] "+ to_temp.latitude + " / " + to_temp.longitude + " / " + cur_direction_degree);
 
-                if(prev_cur_angle > motion_tuning && prev_cur_angle < 2*Math.PI - motion_tuning) {
+                if(cur_gravity < -1.5f) {
+                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 255, 255, 0)).width(3);
+                    mMap.addPolyline(direction_line_opt_temp);
+                    isIgnored = true;
+                }
+                else if (SWING_MODE_cnt > 50 && cur_gravity > 3.0f) {
+                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 255, 0, 255)).width(3);
+                    mMap.addPolyline(direction_line_opt_temp);
+                    isIgnored = true;
+                }
+                else if((prev_cur_angle > motion_tuning && prev_cur_angle < 2*Math.PI - motion_tuning)) {
                     direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 255)).width(3);
                     mMap.addPolyline(direction_line_opt_temp);
                     isIgnored = true;
@@ -583,8 +626,54 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         SWING_plus_max = values[0];
                 }
             }
+            */
 
-            if(SWING_MODE_cnt >= 200) {
+            if(SWING_MODE_cnt >= 300) {
+//                Log.d("GRAVITY2", "min: " + min_gravity + "\nmax: " + max_gravity + "\ndiff= " + (max_gravity-min_gravity));
+                float gravity_diff = max_gravity - min_gravity;
+                float searching_area = 0.5f;
+                if(gravity_diff < 2.0f)
+                    searching_area = 0.2f;
+                else if(gravity_diff >= 2.0f && gravity_diff < 15.0f)
+                    searching_area = 0.4f;
+                else
+                    searching_area = 0.6f;
+                if(first_direction < 0) {
+                    if(first_direction + searching_area > 0) {
+                        SWING_minus_max = 0;
+                        SWING_minus_min = first_direction - searching_area;
+                        SWING_plus_min = 0;
+                        SWING_plus_max = first_direction + searching_area;
+                    }
+                    else if(first_direction - searching_area < -Math.PI) {
+                        SWING_minus_max = first_direction + searching_area;
+                        SWING_minus_min = (float)-Math.PI;
+                        SWING_plus_min = (float)Math.PI + (first_direction - searching_area + (float)Math.PI);
+                        SWING_plus_max = (float)Math.PI;
+                    }
+                    else {
+                        SWING_minus_max = first_direction + searching_area;
+                        SWING_minus_min = first_direction - searching_area;
+                    }
+                }else {
+                    if(first_direction - searching_area < 0) {
+                        SWING_minus_min = first_direction - searching_area;
+                        SWING_minus_max = 0;
+                        SWING_plus_min = 0;
+                        SWING_plus_max = first_direction + searching_area;
+                    }
+                    else if(first_direction + searching_area > Math.PI) {
+                        SWING_minus_min = (float)Math.PI;
+                        SWING_minus_max = (float)-Math.PI + (first_direction + searching_area - (float)Math.PI);
+                        SWING_plus_min = first_direction - searching_area;
+                        SWING_plus_max = (float)Math.PI;
+                    }
+                    else {
+                        SWING_plus_min = first_direction - searching_area;
+                        SWING_plus_max = first_direction + searching_area;
+                    }
+                }
+
                 if(SWING_minus_min < -2.8 && SWING_plus_max > 2.8) {
                     SWING_start_region = SWING_minus_max;
                     SWING_end_region = SWING_plus_min;
@@ -612,12 +701,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 double r = 0.001;
                 LatLng to = new LatLng(latitude + r * Math.cos(SWING_start_region), longitude + r * Math.sin(SWING_start_region));
                 PolylineOptions direction_line_opt = new PolylineOptions();
-                direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(6);
+                direction_line_opt.add(from, to).color(Color.argb(100, 255, 0, 0)).width(10);
                 firstPolyline = mMap.addPolyline(direction_line_opt);
 
                 to = new LatLng(latitude + r * Math.cos(SWING_end_region), longitude + r * Math.sin(SWING_end_region));
                 PolylineOptions direction_line_opt2 = new PolylineOptions();
-                direction_line_opt2.add(from, to).color(Color.argb(100, 0, 0, 255)).width(6);
+                direction_line_opt2.add(from, to).color(Color.argb(100, 0, 0, 255)).width(10);
                 secondPolyline = mMap.addPolyline(direction_line_opt2);
                 bPolylineCreated = true;
 
@@ -649,9 +738,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //        if(Receiver != null)
 //            Receiver.clear();
 
+        Log.d("calculateReceiver", "start_region: " + start_region + ", end_region: " + end_region);
+
         for (int i=0; i < prev_markers.size(); i++) {
             Receivers temp = new Receivers();
-//            Log.d("fillData", "[" + prev_markers.elementAt(i).getTitle() + "]");
+            Log.d("calculateReceiver", "[" + prev_markers.elementAt(i).getTitle() + "]");
             temp.fillData(i, prev_markers.elementAt(i).getPosition(), userLocation, start_region, end_region);
             if(temp.isIncluded) {
 //                prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
@@ -665,6 +756,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             new SetProfile(prev_markers.elementAt(Receiver.elementAt(0).index)).execute();
 //            prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();
             Btn_Swing.setText("Send");
+            STOP_MAP_UPDATE = true;
         }
     }
 
@@ -697,10 +789,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         public View getInfoContents(Marker marker) {
             TextView tvTitle = ((TextView)myContentsView.findViewById(R.id.title));
             tvTitle.setText(marker.getTitle());
+            tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+
             Log.d("getInfoContents", marker.getTitle());
             TextView tvSnippet = ((TextView)myContentsView.findViewById(R.id.snippet));
             tvSnippet.setText(marker.getSnippet());
-            tvSnippet.setText("Snippet");
+            tvSnippet.setText("다른 대상을\n선택하려면 터치!");
+            tvSnippet.setTextColor(getResources().getColor(R.color.colorAccent));
+            tvSnippet.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 
             return myContentsView;
         }

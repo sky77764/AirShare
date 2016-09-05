@@ -11,11 +11,13 @@
         android:weightSum="1">
         <ImageView
             android:id="@+id/profile"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_marginRight="5dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="10dp"
             android:adjustViewBounds="true"
-            android:src="@drawable/default_profile" />
+            android:src="@drawable/default_profile"
+             />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -25,12 +27,13 @@
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="14dp"
+                android:textSize="16dp"
                 android:layout_marginTop="5dp"
                 android:textStyle="bold"
                 android:text="title"
                 android:textColor="@android:color/black"
-                android:layout_gravity="center_horizontal" />
+                android:layout_gravity="center_horizontal"
+                android:textAlignment="center" />
             <TextView
                 android:id="@+id/snippet"
                 android:layout_width="wrap_content"
@@ -38,7 +41,8 @@
                 android:layout_gravity="center_horizontal"
                 android:textSize="12dp"
                 android:textColor="@android:color/black"
-                android:text="snippet" />
+                android:text="snippet"
+                android:textAlignment="center" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

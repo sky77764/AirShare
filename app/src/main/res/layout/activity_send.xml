@@ -10,15 +10,6 @@
     tools:context="com.example.jaeseok.airshare.SendActivity"
     android:background="@color/colorPrimary"
     android:orientation="vertical">
-<!--
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/text_to"
-        android:layout_gravity="center_horizontal|top"
-        android:text="test2"
-        android:textColor="@android:color/black" />
--->
 
     <EditText
         android:layout_width="match_parent"
@@ -33,15 +24,42 @@
         android:scrollbars="vertical"
         android:textColor="@android:color/black" />
 
-    <Button
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        android:id="@+id/btn_send"
-        android:background="@color/colorAccent"
-        android:textColor="@android:color/white"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
         android:layout_gravity="bottom|center"
         android:layout_marginTop="@dimen/activity_vertical_margin"
-        android:textSize="17dp" />
+        tools:context="com.example.jaeseok.airshare.SendActivity">
+
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:text="한명에게"
+            android:id="@+id/btn_send"
+            android:background="@color/colorAccent"
+            android:textColor="@android:color/white"
+            android:textSize="17dp" />
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="9"
+            android:text="\n"
+            android:id="@+id/btn_invisible"
+            android:textSize="12dp"
+            android:visibility="invisible"/>
+
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:text="여러명에게"
+            android:id="@+id/btn_send2"
+            android:background="@color/colorAccent"
+            android:textColor="@android:color/white"
+            android:textSize="17dp" />
+    </LinearLayout>
 
 </LinearLayout>

@@ -92,7 +92,8 @@ public class Receivers implements Comparable<Object>{
         if(brng > Math.PI) {
             brng = brng - 2*Math.PI;
         }
-        this.degree = brng;
+        this.degree = -brng;
+        Log.d("calculateDegree", "degree: " + this.degree);
     }
 
     private static double deg2rad(double deg) {
