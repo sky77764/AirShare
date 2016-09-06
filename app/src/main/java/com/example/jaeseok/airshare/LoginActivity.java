@@ -1,11 +1,16 @@
 package com.example.jaeseok.airshare;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,6 +25,9 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.jaeseok.airshare.api.FilesClient;
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SASLAuthentication;
@@ -96,6 +104,11 @@ public class LoginActivity extends AppCompatActivity {
             return false;
         }
     };
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     @Override
     protected void onResume() {
@@ -110,14 +123,16 @@ public class LoginActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_login);
 
-        applicationClass = (ApplicationClass)getApplicationContext();
+        applicationClass = (ApplicationClass) getApplicationContext();
 
         mVisible = true;
         mControlsView = findViewById(R.id.fullscreen_content_controls);
-        login_form = (FrameLayout)findViewById(R.id.login_frame);
-        login_progress = (ProgressBar)findViewById(R.id.login_progress);
+        login_form = (FrameLayout) findViewById(R.id.login_frame);
+        login_progress = (ProgressBar) findViewById(R.id.login_progress);
 
         Button Bsignin = (Button) findViewById(R.id.signin_button);
+
+
 
 
         // Upon interacting with UI controls, delay any scheduled hide()
@@ -151,13 +166,25 @@ public class LoginActivity extends AppCompatActivity {
 
             }
         });
-    }
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
+
+    }
 
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                        PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 2);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 3);
+        }
 
         // Trigger the initial hide() shortly after the activity has been
         // created, to briefly hint to the user that UI controls
@@ -207,10 +234,50 @@ public class LoginActivity extends AppCompatActivity {
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Login Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://com.example.jaeseok.airshare/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Login Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://com.example.jaeseok.airshare/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client, viewAction);
+        client.disconnect();
+    }
+
     private class SigninTask extends AsyncTask<Void, Void, String> {
         XMPPTCPConnection mConnection_temp;
 
-        public SigninTask(){
+        public SigninTask() {
             applicationClass.client = new FilesClient(USERNAME + ":" + USERNAME, PASSWORD,
                     "http://52.6.95.227:8010/auth/v1.0");
         }
@@ -229,24 +296,23 @@ public class LoginActivity extends AppCompatActivity {
 
             try {
                 result = applicationClass.client.login();
-                if(result) {
+                if (result) {
                     applicationClass.getReady();
                     applicationClass.cacheInit();
-                    java.net.URL url = new java.net.URL("http://52.6.95.227:8080/download.jsp?id=" + USERNAME);
-                    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+                    URL url = new URL("http://52.6.95.227:8080/download.jsp?id=" + USERNAME);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setDoInput(true);
                     connection.connect();
                     InputStream input = connection.getInputStream();
 
-                    if(input != null) {
+                    if (input != null) {
                         Bitmap profile = BitmapFactory.decodeStream(input);
                         input.close();
                         applicationClass.addBitmapToMemoryCache(USERNAME, profile);
                     }
-                }
-                else
+                } else
                     return "fail";
-            } catch(Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return "fail";
             }
@@ -280,11 +346,11 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
 
-            if(result == "succeed") {
+            if (result == "succeed") {
                 Log.i("User Logged In", USERNAME);
                 mConnection = mConnection_temp;
 
-                if(locService != null) {
+                if (locService != null) {
                     Intent i = new Intent();
                     i.setComponent(locService);
                     stopService(i);
@@ -299,8 +365,7 @@ public class LoginActivity extends AppCompatActivity {
                 Intent intentMainActivity = new Intent(LoginActivity.this, MainActivity.class);
                 startActivity(intentMainActivity);
 
-            }
-            else {
+            } else {
                 Toast errMsg = Toast.makeText(getApplicationContext(), "Sign in Failed!", Toast.LENGTH_SHORT);
                 errMsg.show();
                 Toast err2 = Toast.makeText(getApplicationContext(), DOMAIN, Toast.LENGTH_SHORT);
@@ -315,8 +380,13 @@ public class LoginActivity extends AppCompatActivity {
         return mConnection;
     }
 
-    public static String getDOMAIN() {return DOMAIN;}
-    public static String getUSERNAME() {return USERNAME;}
+    public static String getDOMAIN() {
+        return DOMAIN;
+    }
+
+    public static String getUSERNAME() {
+        return USERNAME;
+    }
 
 }
 

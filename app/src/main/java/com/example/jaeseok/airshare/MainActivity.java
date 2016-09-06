@@ -1,7 +1,9 @@
 package com.example.jaeseok.airshare;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -11,10 +13,13 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -93,6 +98,29 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Messages");
+
+
+//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+//                PackageManager.PERMISSION_GRANTED &&
+//                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+//                        PackageManager.PERMISSION_GRANTED) {
+//            if(LocationService.latitude == -1 && LocationService.longitude == -1) {
+//                if(LoginActivity.locService != null) {
+//                    Intent i = new Intent();
+//                    i.setComponent(LoginActivity.locService);
+//                    stopService(i);
+//                }
+//                Intent intent = new Intent(MainActivity.this, LocationService.class);
+//                intent.putExtra("DOMAIN", LoginActivity.DOMAIN);
+//                intent.putExtra("USERNAME", LoginActivity.USERNAME);
+//                LoginActivity.locService = startService(intent);
+//            }
+//        } else {
+////            Toast.makeText(getApplicationContext(), "Need Location Permission", Toast.LENGTH_SHORT).show();
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 2);
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 3);
+//        }
+
 
         Users = new ArrayList<>();
         applicationClass = (ApplicationClass)getApplicationContext();

@@ -269,15 +269,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         bPolylineCreated = false;
         mMap = googleMap;
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
         } else {
 //            Toast.makeText(getApplicationContext(), "Need Location Permission", Toast.LENGTH_SHORT).show();
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    REQUEST_CODE_LOCATION);
-
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 3);
         }
 //        mMap.getUiSettings().setCompassEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
@@ -285,19 +285,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener()
         {
             int i=0;
-            @Override
-            public void onInfoWindowClick(Marker arg0) {
-                Log.d("onInfoWindowClick", "i: " + String.valueOf(i) + ", Receiver.size(): " + String.valueOf(Receiver.size()));
-                if(i < Receiver.size()) {
-                    arg0.hideInfoWindow();
-                    arg0.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
-                    i = (i+1) % Receiver.size();
-                    prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
-                    new SetProfile(prev_markers.elementAt(Receiver.elementAt(i).index)).execute();
+                @Override
+                public void onInfoWindowClick(Marker arg0) {
+                    Log.d("onInfoWindowClick", "i: " + String.valueOf(i) + ", Receiver.size(): " + String.valueOf(Receiver.size()));
+                    if(i < Receiver.size()) {
+                        arg0.hideInfoWindow();
+                        arg0.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+                        i = (i+1) % Receiver.size();
+                        prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+                        new SetProfile(prev_markers.elementAt(Receiver.elementAt(i).index)).execute();
 //                    prev_markers.elementAt(Receiver.elementAt(i).index).showInfoWindow();
-                    USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
+                        USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
 
-                }
+                    }
             }
 
         });
@@ -382,6 +382,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(final Marker marker) {
+
                     /*
                     for(int i=0; i<prev_markers.size(); i++)
                         prev_markers.elementAt(i).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
@@ -754,6 +755,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Collections.sort(Receiver);
             prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
             new SetProfile(prev_markers.elementAt(Receiver.elementAt(0).index)).execute();
+            USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(0).index).getTitle());
 //            prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();
             Btn_Swing.setText("Send");
             STOP_MAP_UPDATE = true;
