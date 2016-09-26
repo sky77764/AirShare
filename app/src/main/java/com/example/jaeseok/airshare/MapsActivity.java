@@ -130,8 +130,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     static float first_direction;
     boolean first_direction_check = true;
 
+    int SENDING_MODE = -1; // 100: 한명에게, 200: 여러명에게게
 
-    @Override
+
+   @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         DisplayMetrics metrics = getResources().getDisplayMetrics();
@@ -152,7 +154,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+       Intent intent = getIntent();
+       if(intent.getExtras().getString("MODE").equals(new String("ONE")))
+           SENDING_MODE = 100;
+       else if(intent.getExtras().getString("MODE").equals(new String("MULTIPLE")))
+           SENDING_MODE = 200;
+       else
+           Toast.makeText(MapsActivity.this, "에러", Toast.LENGTH_SHORT).show();
+
+       BODY = intent.getExtras().getString("BODY");
+
+       mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mGravityAccel = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
@@ -192,62 +204,101 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Btn_Swing.setClickable(false);
 
                 } else {
-                    Intent intent = getIntent();
-                    BODY = intent.getExtras().getString("BODY");
+                    if(SENDING_MODE == 100) { // 한명에게
+                        Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
+                        Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+                        try {
+                            chat.sendMessage(BODY);
+                            Log.d("createChat", BODY);
 
-                    Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
-                    Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
-                    try {
-                        chat.sendMessage(BODY);
-                        Log.d("createChat", BODY);
+                            Calendar time = Calendar.getInstance();
 
-                        Calendar time = Calendar.getInstance();
+                            String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                                    + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
+                            int idx = findUsername(USERNAME_TO);
+                            if (idx == -1) {
+                                Users.add(new User(USERNAME_TO));
+                                idx = findUsername(USERNAME_TO);
+                                Users.get(idx).addMessage(BODY, time, false);
 
-                        String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
-                                + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
-                        int idx = findUsername(USERNAME_TO);
-                        if (idx == -1) {
-                            Users.add(new User(USERNAME_TO));
-                            idx = findUsername(USERNAME_TO);
-                            Users.get(idx).addMessage(BODY, time, false);
-
-                            mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
-                                    Users.get(idx).fromName,
-                                    Users.get(idx).getLastMessageBody(),
-                                    cur_time);
-                        } else {
-                            Users.get(idx).addMessage(BODY, time, false);
-
-                            idx = mAdapter.findUsername(USERNAME_TO);
-                            if(idx != 0) {
-                                mAdapter.remove(idx);
                                 mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
-                                        USERNAME_TO,
-                                        BODY,
+                                        Users.get(idx).fromName,
+                                        Users.get(idx).getLastMessageBody(),
                                         cur_time);
-                                Log.d("SENDMSG", "remove, " + idx);
-                            }
-                            else {
-                                Log.d("SENDMSG", "update, " + idx);
-                                mAdapter.mListData.get(idx).mBody = BODY;
-                                mAdapter.mListData.get(idx).mDate = cur_time;
-                            }
+                            } else {
+                                Users.get(idx).addMessage(BODY, time, false);
 
-//                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mBody = BODY;
-//                            mAdapter.mListData.get(mAdapter.findUsername(USERNAME_TO)).mDate = cur_time;
+                                idx = mAdapter.findUsername(USERNAME_TO);
+                                if (idx != 0) {
+                                    mAdapter.remove(idx);
+                                    mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                            USERNAME_TO,
+                                            BODY,
+                                            cur_time);
+                                } else {
+                                    mAdapter.mListData.get(idx).mBody = BODY;
+                                    mAdapter.mListData.get(idx).mDate = cur_time;
+                                }
+                            }
+                            mAdapter.dataChange();
+
+                            Intent intentChatActivity = new Intent(MapsActivity.this, ChatActivity.class);
+                            intentChatActivity.putExtra("Users_idx", findUsername(USERNAME_TO));
+                            startActivityForResult(intentChatActivity, 0);
+
+                        } catch (SmackException.NotConnectedException e) {
+                            Log.d("SendMsg", e.toString());
+                            Toast.makeText(getApplicationContext(), "Disconnected from the messaging server", Toast.LENGTH_SHORT).show();
                         }
-                        mAdapter.dataChange();
-
-                        Intent intentChatActivity = new Intent(MapsActivity.this, ChatActivity.class);
-                        intentChatActivity.putExtra("Users_idx", findUsername(USERNAME_TO));
-                        startActivityForResult(intentChatActivity, 0);
-
-                    } catch (SmackException.NotConnectedException e) {
-                        Log.d("SendMsg", e.toString());
-                        Toast.makeText(getApplicationContext(), "Disconnected from the messaging server", Toast.LENGTH_SHORT).show();
                     }
+                    else {  // 여러명에게
+                        for(int i = 0; i < Receiver.size(); i++) {
+                            USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
+                            Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
+                            Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+                            try {
+                                chat.sendMessage(BODY);
+                                Log.d("createChat", BODY);
 
+                                Calendar time = Calendar.getInstance();
 
+                                String cur_time = new String(MainActivity.MONTHS[time.get(Calendar.MONTH)] + " " + String.valueOf(time.get(Calendar.DAY_OF_MONTH)) + ", "
+                                        + String.format("%02d", time.get(Calendar.HOUR_OF_DAY)) + ":" + String.format("%02d", time.get(Calendar.MINUTE)));
+                                int idx = findUsername(USERNAME_TO);
+                                if (idx == -1) {
+                                    Users.add(new User(USERNAME_TO));
+                                    idx = findUsername(USERNAME_TO);
+                                    Users.get(idx).addMessage(BODY, time, false);
+
+                                    mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                            Users.get(idx).fromName,
+                                            Users.get(idx).getLastMessageBody(),
+                                            cur_time);
+                                } else {
+                                    Users.get(idx).addMessage(BODY, time, false);
+
+                                    idx = mAdapter.findUsername(USERNAME_TO);
+                                    if (idx != 0) {
+                                        mAdapter.remove(idx);
+                                        mAdapter.addItem(getResources().getDrawable(R.drawable.ic_person),
+                                                USERNAME_TO,
+                                                BODY,
+                                                cur_time);
+                                    } else {
+                                        mAdapter.mListData.get(idx).mBody = BODY;
+                                        mAdapter.mListData.get(idx).mDate = cur_time;
+                                    }
+                                }
+                                mAdapter.dataChange();
+
+                            } catch (SmackException.NotConnectedException e) {
+                                Log.d("SendMsg", e.toString());
+                                Toast.makeText(getApplicationContext(), "Disconnected from the messaging server", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                        setResult(100);
+                        finish();
+                    }
                 }
             }
         });
@@ -290,9 +341,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Log.d("onInfoWindowClick", "i: " + String.valueOf(i) + ", Receiver.size(): " + String.valueOf(Receiver.size()));
                     if(i < Receiver.size()) {
                         arg0.hideInfoWindow();
-                        arg0.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
+                        if(SENDING_MODE == 100)
+                            arg0.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker));
                         i = (i+1) % Receiver.size();
-                        prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+                        if(SENDING_MODE == 100)
+                            prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
                         new SetProfile(prev_markers.elementAt(Receiver.elementAt(i).index)).execute();
 //                    prev_markers.elementAt(Receiver.elementAt(i).index).showInfoWindow();
                         USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
@@ -430,7 +483,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 break;
             case Sensor.TYPE_GRAVITY:
                 cur_gravity = event.values[0];
-                Log.d("GRAVITY", Float.toString(event.values[0]));
+               // Log.d("GRAVITY", Float.toString(event.values[0]));
                 break;
             default:
                 return;
@@ -560,6 +613,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SensorManager.getOrientation(temp, values);
         //Log.d("updateDirection()", String.valueOf(values[0]));
         bearing = values[0] < 0 ? (float)rad2deg(values[0] + 2*(float)Math.PI) : (float)rad2deg(values[0]);
+//        Log.d("MapsActivity", "values[0]: " + values[0]);
 
 
         if(SWING_MODE) {
@@ -576,102 +630,105 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if(cur_gravity > max_gravity)
                 max_gravity = cur_gravity;
 
-            /*
-            LatLng from_temp = new LatLng(latitude, longitude);
-            double r_temp = 0.001;
-            LatLng to_temp = new LatLng(latitude + r_temp * Math.cos(values[0]), longitude + r_temp * Math.sin(values[0]));
-            boolean isIgnored = false;
 
-            PolylineOptions direction_line_opt_temp = new PolylineOptions();
-            if(prev_to.latitude != -10) {
-                double prev_direction_degree = calculateDegree(from_temp, prev_to);
-                double cur_direction_degree = calculateDegree(from_temp, to_temp);
-                double prev_cur_angle = Math.abs(prev_direction_degree - cur_direction_degree);
+            if(SENDING_MODE == 200) {
+                LatLng from_temp = new LatLng(latitude, longitude);
+                double r_temp = 0.001;
+                LatLng to_temp = new LatLng(latitude + r_temp * Math.cos(values[0]), longitude + r_temp * Math.sin(values[0]));
+                boolean isIgnored = false;
 
-//                Log.d("TuningTest", "[prev] "+ prev_to.latitude + " / " + prev_to.longitude + " / " + prev_direction_degree);
-//                Log.d("TuningTest", "[cur] "+ to_temp.latitude + " / " + to_temp.longitude + " / " + cur_direction_degree);
+                PolylineOptions direction_line_opt_temp = new PolylineOptions();
+                if (prev_to.latitude != -10) {
+                    double prev_direction_degree = calculateDegree(from_temp, prev_to);
+                    double cur_direction_degree = calculateDegree(from_temp, to_temp);
+                    double prev_cur_angle = Math.abs(prev_direction_degree - cur_direction_degree);
 
-                if(cur_gravity < -1.5f) {
-                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 255, 255, 0)).width(3);
-                    mMap.addPolyline(direction_line_opt_temp);
-                    isIgnored = true;
+                    //                Log.d("TuningTest", "[prev] "+ prev_to.latitude + " / " + prev_to.longitude + " / " + prev_direction_degree);
+                    //                Log.d("TuningTest", "[cur] "+ to_temp.latitude + " / " + to_temp.longitude + " / " + cur_direction_degree);
+
+                    /*
+                    if (cur_gravity < -1.5f) {
+                        direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 255, 255, 0)).width(3);
+                        mMap.addPolyline(direction_line_opt_temp);
+                        isIgnored = true;
+                    } else if (SWING_MODE_cnt > 50 && cur_gravity > 3.0f) {
+                        direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 255, 0, 255)).width(3);
+                        mMap.addPolyline(direction_line_opt_temp);
+                        isIgnored = true;
+                    } else if ((prev_cur_angle > motion_tuning && prev_cur_angle < 2 * Math.PI - motion_tuning)) {
+                        direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 255)).width(3);
+                        mMap.addPolyline(direction_line_opt_temp);
+                        isIgnored = true;
+                    }
+                    */
+                    if ((prev_cur_angle > motion_tuning && prev_cur_angle < 2 * Math.PI - motion_tuning)) {
+                        direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 255)).width(3);
+                        mMap.addPolyline(direction_line_opt_temp);
+                        isIgnored = true;
+                    }
+
                 }
-                else if (SWING_MODE_cnt > 50 && cur_gravity > 3.0f) {
-                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 255, 0, 255)).width(3);
-                    mMap.addPolyline(direction_line_opt_temp);
-                    isIgnored = true;
-                }
-                else if((prev_cur_angle > motion_tuning && prev_cur_angle < 2*Math.PI - motion_tuning)) {
-                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 255)).width(3);
-                    mMap.addPolyline(direction_line_opt_temp);
-                    isIgnored = true;
-                }
 
+                if (!isIgnored) {
+                    direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 0)).width(3);
+                    mMap.addPolyline(direction_line_opt_temp);
+                    prev_to = to_temp;
+
+                    if (values[0] < 0) {
+                        if (values[0] < SWING_minus_min)
+                            SWING_minus_min = values[0];
+                        if (values[0] > SWING_minus_max)
+                            SWING_minus_max = values[0];
+                    } else {
+                        if (values[0] < SWING_plus_min)
+                            SWING_plus_min = values[0];
+                        if (values[0] > SWING_plus_max)
+                            SWING_plus_max = values[0];
+                    }
+                }
             }
-
-            if(!isIgnored) {
-                direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 0)).width(3);
-                mMap.addPolyline(direction_line_opt_temp);
-                prev_to = to_temp;
-
-                if(values[0] < 0) {
-                    if(values[0] < SWING_minus_min)
-                        SWING_minus_min = values[0];
-                    if(values[0] > SWING_minus_max)
-                        SWING_minus_max = values[0];
-                }
-                else {
-                    if(values[0] < SWING_plus_min)
-                        SWING_plus_min = values[0];
-                    if(values[0] > SWING_plus_max)
-                        SWING_plus_max = values[0];
-                }
-            }
-            */
 
             if(SWING_MODE_cnt >= 300) {
 //                Log.d("GRAVITY2", "min: " + min_gravity + "\nmax: " + max_gravity + "\ndiff= " + (max_gravity-min_gravity));
-                float gravity_diff = max_gravity - min_gravity;
-                float searching_area = 0.5f;
-                if(gravity_diff < 2.0f)
-                    searching_area = 0.2f;
-                else if(gravity_diff >= 2.0f && gravity_diff < 15.0f)
-                    searching_area = 0.4f;
-                else
-                    searching_area = 0.6f;
-                if(first_direction < 0) {
-                    if(first_direction + searching_area > 0) {
-                        SWING_minus_max = 0;
-                        SWING_minus_min = first_direction - searching_area;
-                        SWING_plus_min = 0;
-                        SWING_plus_max = first_direction + searching_area;
-                    }
-                    else if(first_direction - searching_area < -Math.PI) {
-                        SWING_minus_max = first_direction + searching_area;
-                        SWING_minus_min = (float)-Math.PI;
-                        SWING_plus_min = (float)Math.PI + (first_direction - searching_area + (float)Math.PI);
-                        SWING_plus_max = (float)Math.PI;
-                    }
-                    else {
-                        SWING_minus_max = first_direction + searching_area;
-                        SWING_minus_min = first_direction - searching_area;
-                    }
-                }else {
-                    if(first_direction - searching_area < 0) {
-                        SWING_minus_min = first_direction - searching_area;
-                        SWING_minus_max = 0;
-                        SWING_plus_min = 0;
-                        SWING_plus_max = first_direction + searching_area;
-                    }
-                    else if(first_direction + searching_area > Math.PI) {
-                        SWING_minus_min = (float)Math.PI;
-                        SWING_minus_max = (float)-Math.PI + (first_direction + searching_area - (float)Math.PI);
-                        SWING_plus_min = first_direction - searching_area;
-                        SWING_plus_max = (float)Math.PI;
-                    }
-                    else {
-                        SWING_plus_min = first_direction - searching_area;
-                        SWING_plus_max = first_direction + searching_area;
+                if(SENDING_MODE == 100) {
+                    float gravity_diff = max_gravity - min_gravity;
+                    float searching_area = 0.5f;
+                    if (gravity_diff < 2.0f)
+                        searching_area = 0.2f;
+                    else if (gravity_diff >= 2.0f && gravity_diff < 15.0f)
+                        searching_area = 0.4f;
+                    else
+                        searching_area = 0.6f;
+                    if (first_direction < 0) {
+                        if (first_direction + searching_area > 0) {
+                            SWING_minus_max = 0;
+                            SWING_minus_min = first_direction - searching_area;
+                            SWING_plus_min = 0;
+                            SWING_plus_max = first_direction + searching_area;
+                        } else if (first_direction - searching_area < -Math.PI) {
+                            SWING_minus_max = first_direction + searching_area;
+                            SWING_minus_min = (float) -Math.PI;
+                            SWING_plus_min = (float) Math.PI + (first_direction - searching_area + (float) Math.PI);
+                            SWING_plus_max = (float) Math.PI;
+                        } else {
+                            SWING_minus_max = first_direction + searching_area;
+                            SWING_minus_min = first_direction - searching_area;
+                        }
+                    } else {
+                        if (first_direction - searching_area < 0) {
+                            SWING_minus_min = first_direction - searching_area;
+                            SWING_minus_max = 0;
+                            SWING_plus_min = 0;
+                            SWING_plus_max = first_direction + searching_area;
+                        } else if (first_direction + searching_area > Math.PI) {
+                            SWING_minus_min = (float) Math.PI;
+                            SWING_minus_max = (float) -Math.PI + (first_direction + searching_area - (float) Math.PI);
+                            SWING_plus_min = first_direction - searching_area;
+                            SWING_plus_max = (float) Math.PI;
+                        } else {
+                            SWING_plus_min = first_direction - searching_area;
+                            SWING_plus_max = first_direction + searching_area;
+                        }
                     }
                 }
 
@@ -753,7 +810,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if(Receiver.size() > 0) {
             Collections.sort(Receiver);
-            prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+            if(SENDING_MODE == 100)
+                prev_markers.elementAt(Receiver.elementAt(0).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+            else {
+                for(int i=0; i < Receiver.size(); i++)
+                    prev_markers.elementAt(Receiver.elementAt(i).index).setIcon(BitmapDescriptorFactory.fromResource(R.drawable.marker_green));
+             }
+
             new SetProfile(prev_markers.elementAt(Receiver.elementAt(0).index)).execute();
             USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(0).index).getTitle());
 //            prev_markers.elementAt(Receiver.elementAt(0).index).showInfoWindow();

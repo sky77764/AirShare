@@ -56,7 +56,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="5"
             android:text="여러명에게"
-            android:id="@+id/btn_send2"
+            android:id="@+id/btn_send_multiple"
             android:background="@color/colorAccent"
             android:textColor="@android:color/white"
             android:textSize="17dp" />

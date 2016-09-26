@@ -49,6 +49,12 @@ public class Receivers implements Comparable<Object>{
             end = end_region;
         }
 
+        if(this_degree >= start && this_degree <= end)
+            this.isIncluded = true;
+        else
+            this.isIncluded = false;
+
+        /*
         if(end - start <= Math.PI) {
             if(this_degree >= start && this_degree <= end)
                 this.isIncluded = true;
@@ -61,6 +67,7 @@ public class Receivers implements Comparable<Object>{
             else
                 this.isIncluded = false;
         }
+        */
         return;
     }
 

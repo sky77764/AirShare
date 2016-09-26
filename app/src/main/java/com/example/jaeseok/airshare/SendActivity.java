@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 public class SendActivity extends Activity {
-    Button Btn_Send;
+    Button Btn_Send, Btn_Send_Multiple;
     EditText Text_To;
     EditText Text_Body;
 
@@ -39,14 +39,13 @@ public class SendActivity extends Activity {
         getWindow().setLayout(screenWidth, screenHeight);
 
         Btn_Send = (Button) findViewById(R.id.btn_send);
+        Btn_Send_Multiple = (Button) findViewById(R.id.btn_send_multiple);
         //Text_To = (EditText) findViewById(R.id.text_to);
         Text_Body = (EditText) findViewById(R.id.text_body);
 
         Btn_Send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                String USERNAME_TO = Text_To.getText().toString();
-                String USERNAME_TO = "test2";
                 String BODY = Text_Body.getText().toString();
 
                 if (BODY.length() == 0) {
@@ -56,9 +55,24 @@ public class SendActivity extends Activity {
 
                 Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
                 intentMapsActivity.putExtra("BODY", BODY);
+                intentMapsActivity.putExtra("MODE", "ONE");
                 startActivityForResult(intentMapsActivity,0);
+            }
+        });
+        Btn_Send_Multiple.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String BODY = Text_Body.getText().toString();
 
+                if (BODY.length() == 0) {
+                    Toast.makeText(getApplicationContext(), "Fill message", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
+                Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
+                intentMapsActivity.putExtra("BODY", BODY);
+                intentMapsActivity.putExtra("MODE", "MULTIPLE");
+                startActivityForResult(intentMapsActivity,0);
             }
         });
 
