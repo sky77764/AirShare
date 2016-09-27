@@ -1,6 +1,9 @@
 package com.example.jaeseok.airshare;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,6 +22,7 @@ import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -70,6 +74,7 @@ public class MainActivity extends AppCompatActivity
     private final int REQ_CODE_GET_PROFILE = 0;
     private NavigationView navigationView;
     private ApplicationClass applicationClass;
+    static Notification.Builder builder;
 
     public Bitmap getCircleBitmap(Bitmap bitmap) {
         final int length = bitmap.getWidth() < bitmap.getHeight() ? bitmap.getWidth() : bitmap.getHeight();
@@ -98,29 +103,6 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Messages");
-
-
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-//                PackageManager.PERMISSION_GRANTED &&
-//                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-//                        PackageManager.PERMISSION_GRANTED) {
-//            if(LocationService.latitude == -1 && LocationService.longitude == -1) {
-//                if(LoginActivity.locService != null) {
-//                    Intent i = new Intent();
-//                    i.setComponent(LoginActivity.locService);
-//                    stopService(i);
-//                }
-//                Intent intent = new Intent(MainActivity.this, LocationService.class);
-//                intent.putExtra("DOMAIN", LoginActivity.DOMAIN);
-//                intent.putExtra("USERNAME", LoginActivity.USERNAME);
-//                LoginActivity.locService = startService(intent);
-//            }
-//        } else {
-////            Toast.makeText(getApplicationContext(), "Need Location Permission", Toast.LENGTH_SHORT).show();
-//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 2);
-//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, 3);
-//        }
-
 
         Users = new ArrayList<>();
         applicationClass = (ApplicationClass)getApplicationContext();
@@ -175,6 +157,27 @@ public class MainActivity extends AppCompatActivity
         });
 
 
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        builder = new Notification.Builder(this);
+        builder.setSmallIcon(R.mipmap.ic_launcher);
+        // 알림이 출력될 때 상단에 나오는 문구.
+        //builder.setTicker("미리보기 입니다.");
+        // 알림 출력 시간.
+        builder.setWhen(System.currentTimeMillis());
+        builder.setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_LIGHTS);
+        // 알림 터치시 반응.
+        builder.setContentIntent(pendingIntent);
+
+        // 알림 터치시 반응 후 알림 삭제 여부.
+        builder.setAutoCancel(true);
+
+        // 우선순위.
+        builder.setPriority(Notification.PRIORITY_MAX);
 
         chatManager.addChatListener(new ChatManagerListener() {
             @Override
@@ -243,11 +246,19 @@ public class MainActivity extends AppCompatActivity
                         }
                         mAdapter.dataChange();
 
+                        builder.setContentTitle(fromName);
+                        builder.setContentText(msg);
+
+                        if(!ChatActivity.isChatActivityInFront) {
+                            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                            nm.notify(123456, builder.build());
+                        }
+
 
                         if(ChatActivity.isChatActivityInFront && ChatActivity.USERNAME_TO.equals(fromName)) {
-                            Log.d("INFRONT", "TRUE");
-                            Log.d("INFRONT", ChatActivity.USERNAME_TO);
-                            Log.d("INFRONT", fromName);
+//                            Log.d("INFRONT", "TRUE");
+//                            Log.d("INFRONT", ChatActivity.USERNAME_TO);
+//                            Log.d("INFRONT", fromName);
                             ChatMessage chatMessage = new ChatMessage();
                             chatMessage.setId(122);//dummy
                             chatMessage.setMessage(msg);
