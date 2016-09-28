@@ -10,22 +10,28 @@
             android:id="@+id/nav_messages"
             android:icon="@drawable/ic_menu_send"
             android:title="Messages" />
-        <item
-            android:id="@+id/nav_contact"
-            android:icon="@drawable/ic_perm_contact_calendar"
-            android:title="Contact" />
     </group>
 
-        <item android:title="Cloud">
-            <menu>
-                <group android:checkableBehavior="single">
-                <item
-                    android:id="@+id/nav_files"
-                    android:icon="@drawable/ic_cloud"
-                    android:title="Files" />
-                </group>
-            </menu>
-        </item>
+    <item android:title="Cloud">
+        <menu>
+            <group android:checkableBehavior="single">
+            <item
+                android:id="@+id/nav_files"
+                android:icon="@drawable/ic_cloud"
+                android:title="Files" />
+            </group>
+        </menu>
+    </item>
 
+    <item android:title="Account">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/nav_sing_out"
+                    android:icon="@drawable/ic_sign_out"
+                    android:title="Sign Out" />
+            </group>
+        </menu>
+    </item>
 
 </menu>

@@ -16,10 +16,12 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
@@ -53,13 +55,23 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.delay.packet.DelayInformation;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.w3c.dom.Text;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.io.File;
 import java.util.Date;
+
+import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -75,6 +87,9 @@ public class MainActivity extends AppCompatActivity
     private NavigationView navigationView;
     private ApplicationClass applicationClass;
     static Notification.Builder builder;
+    private FloatingActionMenu ic_send;
+    private FloatingActionButton send_file;
+    private FloatingActionButton send_msg;
 
     public Bitmap getCircleBitmap(Bitmap bitmap) {
         final int length = bitmap.getWidth() < bitmap.getHeight() ? bitmap.getWidth() : bitmap.getHeight();
@@ -94,7 +109,6 @@ public class MainActivity extends AppCompatActivity
         return output;
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -107,16 +121,25 @@ public class MainActivity extends AppCompatActivity
         Users = new ArrayList<>();
         applicationClass = (ApplicationClass)getApplicationContext();
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        ic_send = (FloatingActionMenu)findViewById(R.id.ic_send);
+        send_file = (FloatingActionButton)findViewById(R.id.send_file);
+        send_msg = (FloatingActionButton)findViewById(R.id.send_message);
+
+        send_msg.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
+                ic_send.close(false);
                 Intent intentMainActivity = new Intent(MainActivity.this, SendActivity.class);
                 startActivity(intentMainActivity);
+            }
+        });
 
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-
+        send_file.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ic_send.close(false);
+                Intent intent = new Intent(MainActivity.this, SendByMotionActivity.class);
+                startActivity(intent);
             }
         });
 
@@ -396,8 +419,6 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
         }
     }
 
@@ -438,14 +459,14 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.nav_messages) {
 
-        } else if (id == R.id.nav_contact) {
-
         } else if (id == R.id.nav_files) {
             Intent intent = new Intent(MainActivity.this, FilesActivity.class);
             startActivity(intent);
         } else if (id == R.id.nav_profile) {
             Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
             startActivityForResult(intent, REQ_CODE_GET_PROFILE);
+        } else if (id == R.id.nav_sing_out) {
+            new DeleteSessionInfo().execute();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -465,6 +486,64 @@ public class MainActivity extends AppCompatActivity
                 return i;
         }
         return -1;
+    }
+
+    private class DeleteSessionInfo extends AsyncTask<Void, Void, Boolean> {
+        private String mac_address;
+
+        public DeleteSessionInfo() {
+            WifiManager mng = (WifiManager) getSystemService(WIFI_SERVICE);
+            WifiInfo info = mng.getConnectionInfo();
+            mac_address = info.getMacAddress();
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            JSONObject data = new JSONObject();
+
+            try {
+                data.put("address", mac_address);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL("http://52.6.95.227:8080/delete.jsp").openConnection();
+                OutputStream os = null;
+
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Cache-Control", "no-cache");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setDoOutput(true);
+                conn.setDoInput(true);
+
+                os = conn.getOutputStream();
+                os.write(data.toString().getBytes());
+                os.flush();
+
+                int responseCode = conn.getResponseCode();
+                if(responseCode == HttpURLConnection.HTTP_OK)
+                    return true;
+                else
+                    return false;
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+                return false;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if(success)
+                finish();
+            else
+                Toast.makeText(MainActivity.this, "로그 아웃에 실패하였습니다", Toast.LENGTH_SHORT).show();
+        }
     }
 
 

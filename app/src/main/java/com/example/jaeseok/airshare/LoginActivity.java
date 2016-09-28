@@ -2,12 +2,15 @@ package com.example.jaeseok.airshare;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -21,6 +24,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -35,28 +39,36 @@ import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.jivesoftware.smackx.ping.PingManager;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends Activity {
     public static XMPPTCPConnection mConnection;
     public static String DOMAIN;
     String DOMAIN2;
     final int PORT = 5222;
     public static String USERNAME;
     String USERNAME2;
-    String PASSWORD;
+    public static String PASSWORD;
     public static ComponentName locService;
     private ApplicationClass applicationClass;
     private FrameLayout login_form;
-    private ProgressBar login_progress;
+    private LinearLayout login_progress;
 
     private static final boolean AUTO_HIDE = true;
     private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
+
+    private boolean isFirst = true;
 
     /**
      * Some older devices needs a small delay between UI widget updates
@@ -80,10 +92,10 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         public void run() {
             // Delayed display of UI elements
-            ActionBar actionBar = getSupportActionBar();
-            if (actionBar != null) {
-                actionBar.show();
-            }
+//            ActionBar actionBar = getSupportActionBar();
+//            if (actionBar != null) {
+//                actionBar.show();
+//            }
             mControlsView.setVisibility(View.VISIBLE);
         }
     };
@@ -113,8 +125,25 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        login_form.setVisibility(View.VISIBLE);
-        login_progress.setVisibility(View.GONE);
+        if(isFirst){
+            isFirst = false;
+            Intent intent = getIntent();
+            if(intent.getExtras().getBoolean("login")) {
+                USERNAME = intent.getExtras().getString("user_name");
+                PASSWORD = "0000";
+                DOMAIN = "52.6.95.227";
+                USERNAME2 = USERNAME;
+                DOMAIN2 = DOMAIN;
+
+                login_form.setVisibility(View.GONE);
+                login_progress.setVisibility(View.VISIBLE);
+
+                new SigninTask().execute(null, null, null);
+            }
+        } else {
+            login_form.setVisibility(View.VISIBLE);
+            login_progress.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -128,19 +157,16 @@ public class LoginActivity extends AppCompatActivity {
         mVisible = true;
         mControlsView = findViewById(R.id.fullscreen_content_controls);
         login_form = (FrameLayout) findViewById(R.id.login_frame);
-        login_progress = (ProgressBar) findViewById(R.id.login_progress);
+        login_progress = (LinearLayout) findViewById(R.id.login_progress);
 
-        Button Bsignin = (Button) findViewById(R.id.signin_button);
-
-
-
+        Button mSignIn = (Button) findViewById(R.id.signin_button);
 
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
-        Bsignin.setOnTouchListener(mDelayHideTouchListener);
+        mSignIn.setOnTouchListener(mDelayHideTouchListener);
 
-        Bsignin.setOnClickListener(new View.OnClickListener() {
+        mSignIn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 EditText id = (EditText) findViewById(R.id.TVid);
                 EditText pw = (EditText) findViewById(R.id.TVpw);
@@ -162,6 +188,8 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
+                new InsertSessionInfo().execute();
+
                 new SigninTask().execute(null, null, null);
 
             }
@@ -169,8 +197,6 @@ public class LoginActivity extends AppCompatActivity {
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
-
-
     }
 
 
@@ -202,10 +228,10 @@ public class LoginActivity extends AppCompatActivity {
 
     private void hide() {
         // Hide UI first
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.hide();
-        }
+//        ActionBar actionBar = getSupportActionBar();
+//        if (actionBar != null) {
+//            actionBar.hide();
+//        }
         mControlsView.setVisibility(View.GONE);
         mVisible = false;
 
@@ -274,6 +300,63 @@ public class LoginActivity extends AppCompatActivity {
         client.disconnect();
     }
 
+    private class InsertSessionInfo extends AsyncTask<Void, Void, Boolean> {
+        private String mac_address;
+
+        public InsertSessionInfo() {
+            WifiManager mng = (WifiManager) getSystemService(WIFI_SERVICE);
+            WifiInfo info = mng.getConnectionInfo();
+            mac_address = info.getMacAddress();
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            JSONObject data = new JSONObject();
+
+            try {
+                data.put("address", mac_address);
+                data.put("user_name", USERNAME);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL("http://52.6.95.227:8080/insert.jsp").openConnection();
+                OutputStream os = null;
+
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Cache-Control", "no-cache");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setDoOutput(true);
+                conn.setDoInput(true);
+
+                os = conn.getOutputStream();
+                os.write(data.toString().getBytes());
+                os.flush();
+
+                int responseCode = conn.getResponseCode();
+                if(responseCode == HttpURLConnection.HTTP_OK)
+                    return true;
+                else
+                    return false;
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+                return false;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if(!success)
+                Toast.makeText(LoginActivity.this, "로그인 유지 실패", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private class SigninTask extends AsyncTask<Void, Void, String> {
         XMPPTCPConnection mConnection_temp;
 
@@ -334,10 +417,17 @@ public class LoginActivity extends AppCompatActivity {
                 mConnection_temp.connect();
                 mConnection_temp.login(USERNAME, PASSWORD);
 
+                PingManager pingManager = PingManager.getInstanceFor(mConnection_temp);
+                pingManager.setPingInterval(300); // seconds
+
+
             } catch (SmackException | IOException | XMPPException e) {
                 e.printStackTrace();
+                Toast.makeText(LoginActivity.this, "Openfire 로그인 실패", Toast.LENGTH_SHORT).show();
                 return "fail";
             }
+
+
 
 
             return "succeed";

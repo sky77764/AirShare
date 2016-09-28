@@ -56,6 +56,7 @@ public class SendActivity extends Activity {
                 Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
                 intentMapsActivity.putExtra("BODY", BODY);
                 intentMapsActivity.putExtra("MODE", "ONE");
+                intentMapsActivity.putExtra("TYPE", "MESSAGE");
                 startActivityForResult(intentMapsActivity,0);
             }
         });
@@ -72,6 +73,7 @@ public class SendActivity extends Activity {
                 Intent intentMapsActivity = new Intent(SendActivity.this, MapsActivity.class);
                 intentMapsActivity.putExtra("BODY", BODY);
                 intentMapsActivity.putExtra("MODE", "MULTIPLE");
+                intentMapsActivity.putExtra("TYPE", "MESSAGE");
                 startActivityForResult(intentMapsActivity,0);
             }
         });

@@ -17,6 +17,7 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.apache.log4j.chainsaw.Main;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SASLAuthentication;
 import org.jivesoftware.smack.SmackException;
@@ -42,9 +43,21 @@ public class LocationService extends Service {
     public static double latitude, longitude;
     public static float bearing;
 
+    boolean isGPSEnabled = false;
+    boolean isNetworkEnabled = false;
+    boolean isGetLocation = false;
+
     private LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
+            if(LoginActivity.mConnection.isConnected()){
+                Log.d("LocationService", "connected");
+            }
+            else {
+                Log.d("LocationService", "disconnected");
+                System.exit(0);
+
+            }
             DOMAIN = LoginActivity.getDOMAIN();
             USERNAME = LoginActivity.getUSERNAME();
             latitude = location.getLatitude();
@@ -89,7 +102,8 @@ public class LocationService extends Service {
         latitude = longitude = -1;
 
         LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
+        isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         //mDestination = intent.getParcelableExtra("destination");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -101,8 +115,13 @@ public class LocationService extends Service {
             }
         }
         locationManager.removeUpdates(locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
-                locationListener);
+        if(isGPSEnabled)
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0,
+                    locationListener);
+
+        if(isNetworkEnabled)
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0,
+                   locationListener);
 
 
 

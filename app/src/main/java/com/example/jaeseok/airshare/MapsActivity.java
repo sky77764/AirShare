@@ -66,13 +66,18 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -82,6 +87,7 @@ import java.util.Vector;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, SensorEventListener {
     String USERNAME = LoginActivity.getUSERNAME();
     String DOMAIN;
+    String DOMAIN2;
     String phpFILENAME;
     String url;
     Button Btn_Swing;
@@ -122,6 +128,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Vector<Receivers> Receiver = new Vector<Receivers>();
 
     Polyline firstPolyline, secondPolyline;
+    Vector<Polyline> Polylines;
     boolean bPolylineCreated = false;
     static LatLng prev_to;
     final double motion_tuning = 0.7;
@@ -131,6 +138,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     boolean first_direction_check = true;
 
     int SENDING_MODE = -1; // 100: 한명에게, 200: 여러명에게게
+
+    private String filename;
+    private boolean isSendingFile = false;
 
 
    @Override
@@ -142,6 +152,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         bPolylineCreated = false;
         STOP_MAP_UPDATE = false;
         first_direction_check = true;
+        Polylines = new Vector<Polyline>();
+       DOMAIN2 = new String("ip-172-31-63-7");
 
         applicationClass = (ApplicationClass)getApplicationContext();
 
@@ -154,22 +166,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-       Intent intent = getIntent();
-       if(intent.getExtras().getString("MODE").equals(new String("ONE")))
-           SENDING_MODE = 100;
-       else if(intent.getExtras().getString("MODE").equals(new String("MULTIPLE")))
-           SENDING_MODE = 200;
-       else
-           Toast.makeText(MapsActivity.this, "에러", Toast.LENGTH_SHORT).show();
+        Intent intent = getIntent();
+        if(intent.getExtras().getString("MODE").equals(new String("ONE")))
+            SENDING_MODE = 100;
+        else if(intent.getExtras().getString("MODE").equals(new String("MULTIPLE")))
+            SENDING_MODE = 200;
+        else
+            Toast.makeText(MapsActivity.this, "에러", Toast.LENGTH_SHORT).show();
 
-       BODY = intent.getExtras().getString("BODY");
+        BODY = intent.getExtras().getString("BODY");
 
-       mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        if(intent.getExtras().getString("TYPE").equals(new String("FILE"))){
+            filename = BODY;
+            isSendingFile = true;
+        }
+
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mField = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mGravityAccel = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
 
         DOMAIN = LoginActivity.getDOMAIN();
+
 //        phpFILENAME = "selectAll.php";
         phpFILENAME = "selectNear.php";
         url = "http://" + DOMAIN + "/" + phpFILENAME + "?username=" + USERNAME;
@@ -204,9 +222,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Btn_Swing.setClickable(false);
 
                 } else {
+
                     if(SENDING_MODE == 100) { // 한명에게
-                        Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
-                        Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+
+                        Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN2);
+                        Log.d("createChat", USERNAME_TO + "@" + DOMAIN2);
                         try {
                             chat.sendMessage(BODY);
                             Log.d("createChat", BODY);
@@ -242,6 +262,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             }
                             mAdapter.dataChange();
 
+                            if(isSendingFile)
+                                new TransmitFile(USERNAME_TO).execute();
+
                             Intent intentChatActivity = new Intent(MapsActivity.this, ChatActivity.class);
                             intentChatActivity.putExtra("Users_idx", findUsername(USERNAME_TO));
                             startActivityForResult(intentChatActivity, 0);
@@ -254,8 +277,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     else {  // 여러명에게
                         for(int i = 0; i < Receiver.size(); i++) {
                             USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
-                            Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
-                            Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+
+                            if(isSendingFile)
+                                new TransmitFile(USERNAME_TO).execute();
+
+                            Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN2);
+                            Log.d("createChat", USERNAME_TO + "@" + DOMAIN2);
                             try {
                                 chat.sendMessage(BODY);
                                 Log.d("createChat", BODY);
@@ -661,17 +688,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         isIgnored = true;
                     }
                     */
+                    /*
                     if ((prev_cur_angle > motion_tuning && prev_cur_angle < 2 * Math.PI - motion_tuning)) {
                         direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 255)).width(3);
                         mMap.addPolyline(direction_line_opt_temp);
                         isIgnored = true;
                     }
+                    */
 
                 }
 
                 if (!isIgnored) {
                     direction_line_opt_temp.add(from_temp, to_temp).color(Color.argb(100, 0, 255, 0)).width(3);
-                    mMap.addPolyline(direction_line_opt_temp);
+                    Polylines.add(mMap.addPolyline(direction_line_opt_temp));
                     prev_to = to_temp;
 
                     if (values[0] < 0) {
@@ -782,6 +811,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Btn_Swing.setText("Swing");
                 //Btn_Swing.setTextColor(Color.WHITE);
                 Btn_Swing.setClickable(true);
+
+                for(int i=0; i<Polylines.size(); i++)
+                    Polylines.elementAt(i).remove();
+                Polylines.removeAllElements();
 
                 calculateReceiver(from, SWING_start_region, SWING_end_region);
             }
@@ -955,6 +988,58 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             else
                 mImageProfile.setImageResource(R.drawable.default_profile);
             marker.showInfoWindow();
+        }
+    }
+
+    public class TransmitFile extends AsyncTask<Void, Void, Boolean> {
+
+        private String to;
+
+        public TransmitFile(String to) {
+            this.to = to;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                String serverIP = "52.6.95.227";
+                String msg = applicationClass.client.getUserName().split(":")[0] + ":" + to + ":" + filename;
+                System.out.println("서버에 연결중입니다. 서버 IP : " + serverIP);
+
+                Socket socket = new Socket(serverIP, 8020);
+
+                OutputStream out = socket.getOutputStream();
+                DataOutputStream dos = new DataOutputStream(out);
+
+                dos.writeUTF(msg);
+
+                InputStream in = socket.getInputStream();
+                DataInputStream dis = new DataInputStream(in);
+
+                System.out.println("서버로부터 받은 메세지 : " + dis.readUTF());
+                System.out.println("연결을 종료합니다.");
+
+                dis.close();
+                dos.close();
+                socket.close();
+
+                return true;
+            } catch (ConnectException ce) {
+                ce.printStackTrace();
+                return false;
+            } catch (IOException ie) {
+                ie.printStackTrace();
+                return false;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if(!success)
+                Toast.makeText(MapsActivity.this, to + "에게로의 파일 전송에 실패하였습니다", Toast.LENGTH_SHORT).show();
         }
     }
 }

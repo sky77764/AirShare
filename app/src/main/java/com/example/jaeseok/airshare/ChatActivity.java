@@ -46,6 +46,7 @@ public class ChatActivity extends ActionBarActivity {
     public static MainActivity.ListViewAdapter mAdapter = MainActivity.mAdapter;
     public static boolean isChatActivityInFront = false;
     public static String DOMAIN = LoginActivity.getDOMAIN();
+    String DOMAIN2;
     private ImageButton mImageButton;
     private final int REQ_CODE_GET_FILE_NAME = 0;
 
@@ -54,6 +55,7 @@ public class ChatActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         isChatActivityInFront = true;
+        DOMAIN2 = new String("ip-172-31-63-7");
 
         Intent intent = getIntent();
         Users_idx = intent.getExtras().getInt("Users_idx");
@@ -122,8 +124,8 @@ public class ChatActivity extends ActionBarActivity {
                 }
 
 
-                Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
-                Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+                Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN2);
+                Log.d("createChat", USERNAME_TO + "@" + DOMAIN2);
                 try {
                     chat.sendMessage(messageText);
                     Log.d("createChat", messageText);
@@ -198,8 +200,8 @@ public class ChatActivity extends ActionBarActivity {
         if (resultCode == ChatActivity.RESULT_OK && (requestCode == REQ_CODE_GET_FILE_NAME)) {
             String messageText = data.getStringExtra("filename");
 
-            Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN);
-            Log.d("createChat", USERNAME_TO + "@" + DOMAIN);
+            Chat chat = chatManager.createChat(USERNAME_TO + "@" + DOMAIN2);
+            Log.d("createChat", USERNAME_TO + "@" + DOMAIN2);
             try {
                 chat.sendMessage(messageText);
                 Log.d("createChat", messageText);
@@ -289,6 +291,7 @@ public class ChatActivity extends ActionBarActivity {
     @Override
     public void onBackPressed() {
 //        super.onBackPressed();
+        System.out.println("HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE HERE");
         setResult(100);
 //        Log.d("TEST", "ChatActivity-onBackPressed");
         finish();
