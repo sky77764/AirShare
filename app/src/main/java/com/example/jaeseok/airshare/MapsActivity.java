@@ -277,6 +277,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     else {  // 여러명에게
                         for(int i = 0; i < Receiver.size(); i++) {
                             USERNAME_TO = new String(prev_markers.elementAt(Receiver.elementAt(i).index).getTitle());
+                            new SetMultipleProfile(USERNAME_TO).execute();
 
                             if(isSendingFile)
                                 new TransmitFile(USERNAME_TO).execute();
@@ -947,6 +948,45 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             brng = brng - 2*Math.PI;
         }
         return brng;
+    }
+
+    public class SetMultipleProfile extends AsyncTask<Void, Void, Boolean> {
+        private String id;
+        private Bitmap profile;
+
+        public SetMultipleProfile(String id){
+            this.id = id;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                URL url = new URL("http://52.6.95.227:8080/download.jsp?id=" + id);
+                HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+                connection.setDoInput(true);
+                connection.connect();
+                InputStream input = connection.getInputStream();
+
+                if(input != null) {
+                    profile = BitmapFactory.decodeStream(input);
+                    applicationClass.addBitmapToMemoryCache(id, profile);
+                    input.close();
+                    return true;
+                } else
+                    return false;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if(success && applicationClass.getBitmapFromMemCache(id) != null)
+                mImageProfile.setImageBitmap(getCircleBitmap(applicationClass.getBitmapFromMemCache(id)));
+            else
+                mImageProfile.setImageResource(R.drawable.default_profile);
+        }
     }
 
     public class SetProfile extends AsyncTask<Void, Void, Boolean> {
